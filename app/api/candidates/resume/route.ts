@@ -1,10 +1,10 @@
-const BACKEND_URL = "http://localhost:4000/api/candidates/resume";
+import { getBackendUrl } from "@/lib/backend";
 
 export async function POST(request: Request) {
   try {
     const body = await request.formData();
 
-    const response = await fetch(BACKEND_URL, {
+    const response = await fetch(getBackendUrl("/api/candidates/resume"), {
       method: "POST",
       headers: {
         Accept: "application/json",

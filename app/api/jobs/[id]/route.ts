@@ -1,10 +1,10 @@
-const BACKEND_URL = "http://localhost:4000/api/jobs";
+import { getBackendUrl } from "@/lib/backend";
 
 export async function GET(_request: Request, context: RouteContext<"/api/jobs/[id]">) {
   const { id } = await context.params;
 
   try {
-    const response = await fetch(`${BACKEND_URL}/${id}`, {
+    const response = await fetch(getBackendUrl(`/api/jobs/${id}`), {
       headers: {
         Accept: "application/json",
       },

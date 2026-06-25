@@ -1,8 +1,8 @@
-const BACKEND_URL = "http://localhost:4000/api/candidates/me";
+import { getBackendUrl } from "@/lib/backend";
 
 export async function GET(request: Request) {
   try {
-    const response = await fetch(BACKEND_URL, {
+    const response = await fetch(getBackendUrl("/api/candidates/me"), {
       headers: {
         Accept: "application/json",
         Cookie: request.headers.get("cookie") ?? "",

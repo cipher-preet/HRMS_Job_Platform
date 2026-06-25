@@ -1,10 +1,10 @@
-const BACKEND_URL = "http://localhost:4000/api/jobs";
+import { getBackendUrl } from "@/lib/backend";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
 
   try {
-    const response = await fetch(`${BACKEND_URL}/${id}/apply`, {
+    const response = await fetch(getBackendUrl(`/api/jobs/${id}/apply`), {
       method: "POST",
       headers: {
         Accept: "application/json",

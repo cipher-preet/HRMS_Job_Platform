@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Backend configuration
+
+Copy `.env.example` to `.env.local`, then set the backend URL in one place:
+
+```env
+BACKEND_URL=http://localhost:4000
+```
+
+Restart the development server after changing the value.
+
 ## Getting Started
 
 First, run the development server:
