@@ -71,24 +71,24 @@ export function DashboardHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm shadow-slate-200/80 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-3 px-3 py-3 sm:px-4 xl:flex-row xl:items-center xl:justify-between">
-          <Link className="flex w-fit items-center gap-3.5" href="/">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center sm:h-[68px] sm:w-[68px]">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2.5 px-4 py-2.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <Link className="flex w-fit items-center gap-2.5" href="/">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center sm:h-12 sm:w-12">
               <Image
                 alt="HireOnDeck logo"
                 className="h-full w-full object-contain"
-                height={68}
+                height={48}
                 priority
                 src="/logo.png"
-                width={68}
+                width={48}
               />
             </span>
             <span className="flex min-w-0 flex-col justify-center">
-              <span className="text-lg font-bold leading-tight text-slate-950 sm:text-xl">
+              <span className="text-[17px] font-bold leading-tight tracking-[-0.02em] text-slate-950 sm:text-lg">
                 HireOnDeck
               </span>
-              <span className="mt-1 hidden text-[10px] font-semibold uppercase leading-4 tracking-[0.18em] text-slate-400 sm:block">
+              <span className="mt-0.5 hidden text-[9px] font-semibold uppercase leading-4 tracking-[0.16em] text-slate-400 sm:block">
                 Opportunities open. Careers begin.
               </span>
             </span>
@@ -96,11 +96,11 @@ export function DashboardHeader() {
 
           <nav
             aria-label="Primary navigation"
-            className="thin-scrollbar flex w-full max-w-full items-center gap-1.5 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-1 text-[11px] font-semibold uppercase tracking-[0.06em] xl:w-auto"
+            className="thin-scrollbar flex w-full max-w-full items-center gap-1 overflow-x-auto rounded-xl border border-slate-200/80 bg-slate-50/80 p-1 text-[11px] font-semibold lg:w-auto"
           >
             <label
-              className={`flex h-9 shrink-0 items-center gap-2 rounded-md bg-slate-950 px-3 text-white transition sm:h-10 sm:px-4 ${
-                isUploadingResume ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-slate-800"
+              className={`flex h-9 shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-3.5 text-white shadow-sm shadow-blue-200 transition ${
+                isUploadingResume ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-blue-700"
               }`}
             >
               <FiUpload className="h-3.5 w-3.5" aria-hidden />
@@ -128,9 +128,9 @@ export function DashboardHeader() {
               return (
                 <Link
                   key={item.href}
-                  className={`flex h-9 shrink-0 items-center gap-2 rounded-md px-3 transition sm:h-10 sm:px-3.5 ${
+                  className={`flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 transition ${
                     isActive
-                      ? "bg-white text-slate-950 shadow-sm ring-1 ring-slate-200"
+                      ? "bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/80"
                       : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm"
                   }`}
                   href={item.href}
@@ -138,7 +138,7 @@ export function DashboardHeader() {
                   <Icon className="h-3.5 w-3.5" aria-hidden />
                   <span className="whitespace-nowrap">{item.label}</span>
                   {item.badge ? (
-                    <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] leading-none text-white">
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] leading-none text-blue-700 ring-1 ring-blue-100">
                       {item.badge}
                     </span>
                   ) : null}
@@ -147,7 +147,7 @@ export function DashboardHeader() {
             })}
             {isSignedIn ? (
               <button
-                className="flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-slate-600 transition hover:bg-white hover:text-slate-900 hover:shadow-sm sm:h-10 sm:px-3.5"
+                className="flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-slate-600 transition hover:bg-white hover:text-slate-900 hover:shadow-sm"
                 onClick={() => setShowSignOutConfirm(true)}
                 type="button"
               >

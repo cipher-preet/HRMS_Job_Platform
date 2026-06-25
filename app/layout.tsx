@@ -3,9 +3,9 @@ import { ReduxProvider } from "./_redux/provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "HireOnDeck Jobs Dashboard",
+  title: "HireOnDeck | Find your next opportunity",
   description:
-    "A responsive jobs page and job detail modal for HireOnDeck.",
+    "Discover relevant jobs and manage your candidate profile with HireOnDeck.",
   icons: {
     icon: "/logo.png",
   },

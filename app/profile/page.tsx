@@ -136,18 +136,18 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent text-[#2f3747]">
+    <div className="min-h-screen text-slate-700">
       <DashboardHeader />
 
-      <main className="mx-auto grid w-full max-w-[1180px] gap-5 px-3 py-5 sm:px-4 sm:py-8 lg:grid-cols-[minmax(0,1fr)_420px]">
-        <section className="space-y-5">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 sm:p-5">
+      <main className="mx-auto grid w-full max-w-[1200px] gap-5 px-4 py-5 sm:px-6 sm:py-7 lg:grid-cols-[minmax(0,1fr)_390px] lg:gap-6">
+        <section className="space-y-4">
+          <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60 p-4 shadow-sm shadow-blue-100/50 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-500">
                   Candidate profile
                 </p>
-                <h1 className="mt-1 text-2xl font-semibold text-slate-950">
+                <h1 className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-slate-950">
                   {isSessionLoading ? "Checking session..." : isSignedIn ? candidate?.name : "Welcome back"}
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
@@ -172,7 +172,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/70 sm:p-5">
+          <section className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-200/40 sm:p-5">
             <div className="grid gap-3">
               <UploadButton
                 disabled={!isSignedIn || isUploadingResume}
@@ -210,14 +210,14 @@ export default function ProfilePage() {
         </section>
 
         {!isSessionLoading && !isSignedIn ? (
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
-            <div className="border-b border-slate-100 bg-white p-4 sm:p-5">
+        <aside className="lg:sticky lg:top-20 lg:self-start">
+          <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50">
+            <div className="border-b border-slate-100 bg-blue-50/40 p-4">
               <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
                 <button
                   className={`rounded-md px-4 py-2.5 text-sm font-semibold transition ${
                     isLogin
-                      ? "bg-white text-slate-950 shadow-sm"
+                      ? "bg-white text-blue-700 shadow-sm ring-1 ring-blue-100"
                       : "text-slate-500 hover:bg-white hover:text-slate-800"
                   }`}
                   onClick={() => {
@@ -231,7 +231,7 @@ export default function ProfilePage() {
                 <button
                   className={`rounded-md px-4 py-2.5 text-sm font-semibold transition ${
                     !isLogin
-                      ? "bg-white text-slate-950 shadow-sm"
+                      ? "bg-white text-blue-700 shadow-sm ring-1 ring-blue-100"
                       : "text-slate-500 hover:bg-white hover:text-slate-800"
                   }`}
                   onClick={() => {
@@ -246,10 +246,10 @@ export default function ProfilePage() {
             </div>
 
             <div className="p-4 sm:p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-500">
                 {isLogin ? "Login" : "Register"}
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+              <h2 className="mt-1.5 text-xl font-semibold tracking-[-0.01em] text-slate-950">
                 {isLogin ? "Login" : "Register"}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -326,7 +326,7 @@ export default function ProfilePage() {
                 ) : null}
 
                 <button
-                  className="h-11 w-full rounded-md bg-slate-950 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="h-10 w-full rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
                   disabled={isLoggingIn || isRegistering}
                   type="submit"
                 >
@@ -457,11 +457,11 @@ function UploadButton({
   return (
     <label
       className={`flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 transition ${
-        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-slate-300 hover:bg-slate-50"
+        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-blue-200 hover:bg-blue-50/40"
       }`}
     >
       <span className="flex min-w-0 items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-50 text-slate-500 ring-1 ring-slate-100">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100">
           <FiUploadCloud className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0">
@@ -543,7 +543,7 @@ function BasicDetail({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white px-4 py-3">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-slate-50 text-slate-500 ring-1 ring-slate-100">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-blue-50 text-blue-600 ring-1 ring-blue-100">
         <Icon className="h-4 w-4" aria-hidden />
       </span>
       <div className="min-w-0">
@@ -574,7 +574,7 @@ function AuthField({
   return (
     <label className="block">
       <span className="text-xs font-semibold text-slate-600">{label}</span>
-      <span className="mt-2 flex h-11 items-center rounded-md border border-slate-200 bg-white px-3 focus-within:border-slate-400">
+      <span className="mt-2 flex h-10 items-center rounded-lg border border-slate-200 bg-white px-3 transition focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100">
         <Icon className="mr-2 h-4 w-4 text-slate-400" aria-hidden />
         <input
           autoComplete={autoComplete}
