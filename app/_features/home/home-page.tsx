@@ -2,16 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  FiAlertCircle,
   FiArrowRight,
   FiBriefcase,
   FiCheckCircle,
   FiExternalLink,
   FiFilter,
+  FiLogIn,
   FiInstagram,
   FiLinkedin,
   FiMapPin,
   FiX,
 } from "react-icons/fi";
+import { useRouter } from "next/navigation";
 import { DashboardFooter } from "../../_components/dashboard-footer";
 import { DashboardHeader } from "../../_components/dashboard-header";
 import { useLazyGetCandidateSessionQuery } from "../../_redux/api/AuthApi";
@@ -42,6 +45,16 @@ type FilterOption = {
   value: string;
   count: number;
 };
+type ApplyNotice = {
+  title: string;
+  message: string;
+  actionLabel?: string;
+  actionHref?: string;
+};
+type ApplicationSuccess = {
+  title: string;
+  message: string;
+};
 
 const defaultFilters: Filters = {
   location: ALL_FILTER,
@@ -65,6 +78,7 @@ export function HomePage() {
   const jobs = useMemo(() => getUniqueJobs(jobsData?.pages.flatMap((page) => page.jobs) ?? []), [jobsData]);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [applicationSuccess, setApplicationSuccess] = useState<ApplicationSuccess | null>(null);
   const {
     data: selectedJobDetail,
     isError: isJobDetailError,
@@ -246,7 +260,16 @@ export function HomePage() {
           isLoading={isJobDetailLoading}
           job={selectedJobDetail ?? selectedJob}
           onClose={() => setSelectedJob(null)}
+          onAppliedSuccess={setApplicationSuccess}
           onRetry={refetchJobDetail}
+        />
+      ) : null}
+
+      {applicationSuccess ? (
+        <ApplicationSuccessDialog
+          message={applicationSuccess.message}
+          onClose={() => setApplicationSuccess(null)}
+          title={applicationSuccess.title}
         />
       ) : null}
     </div>
@@ -506,6 +529,7 @@ function JobModal({
   isLoading,
   job,
   onClose,
+  onAppliedSuccess,
   onRetry,
 }: {
   fallbackJob: Job;
@@ -513,10 +537,11 @@ function JobModal({
   isLoading: boolean;
   job: Job;
   onClose: () => void;
+  onAppliedSuccess: (success: ApplicationSuccess) => void;
   onRetry: () => void;
 }) {
-  const [applyNotice, setApplyNotice] = useState<{ title: string; message: string } | null>(null);
-  const [applyToast, setApplyToast] = useState<string | null>(null);
+  const router = useRouter();
+  const [applyNotice, setApplyNotice] = useState<ApplyNotice | null>(null);
   const [applyJob, { isLoading: isApplying }] = useApplyJobMutation();
   const [getCandidateSession, { isFetching: isCheckingSession }] = useLazyGetCandidateSessionQuery();
   const visibleJob = isLoading ? fallbackJob : job;
@@ -535,7 +560,9 @@ function JobModal({
     } catch {
       setApplyNotice({
         title: "Login required",
-        message: "Please login first to apply for this job.",
+        message: "Please login or create your candidate profile before applying for this job.",
+        actionLabel: "Login to continue",
+        actionHref: "/profile",
       });
       return;
     }
@@ -545,7 +572,9 @@ function JobModal({
     if (!response.success) {
       setApplyNotice({
         title: "Login required",
-        message: "Please login first to apply for this job.",
+        message: "Please login or create your candidate profile before applying for this job.",
+        actionLabel: "Login to continue",
+        actionHref: "/profile",
       });
       return;
     }
@@ -553,7 +582,9 @@ function JobModal({
     if (!resumeUrl) {
       setApplyNotice({
         title: "Resume required",
-        message: "Please upload your resume first before applying for this job.",
+        message: "Upload your resume once so recruiters can review your profile when you apply.",
+        actionLabel: "Upload resume",
+        actionHref: "/profile",
       });
       return;
     }
@@ -569,14 +600,28 @@ function JobModal({
         return;
       }
 
-      setApplyToast("Job applied successfully.");
-      window.setTimeout(() => setApplyToast(null), 3000);
+      onAppliedSuccess({
+        title: "Application submitted",
+        message: `Your application for ${cleanValue(job.title)} at ${cleanValue(job.company)} was submitted successfully.`,
+      });
+      onClose();
     } catch {
       setApplyNotice({
         title: "Unable to apply",
         message: "Please try again in a moment.",
       });
     }
+  }
+
+  function handleApplyNoticeAction() {
+    if (!applyNotice?.actionHref) {
+      setApplyNotice(null);
+      return;
+    }
+
+    setApplyNotice(null);
+    onClose();
+    router.push(applyNotice.actionHref);
   }
 
   return (
@@ -730,38 +775,107 @@ function JobModal({
       </section>
 
       {applyNotice ? (
-        <section className="absolute inset-x-3 top-1/2 z-10 mx-auto w-full max-w-md -translate-y-1/2 rounded-xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-950/20 sm:p-5">
+        <section className="absolute inset-x-3 top-1/2 z-10 mx-auto w-full max-w-md -translate-y-1/2 overflow-hidden rounded-xl border border-blue-100 bg-white shadow-2xl shadow-slate-950/20">
+          <div className="border-b border-blue-100 bg-blue-50/60 px-4 py-4 sm:px-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white text-blue-600 shadow-sm ring-1 ring-blue-100">
+                  <FiAlertCircle className="h-5 w-5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-500">
+                    Application
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold text-slate-950">{applyNotice.title}</h2>
+                </div>
+              </div>
+              <button
+                aria-label="Close apply message"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-white hover:text-slate-700"
+                onClick={() => setApplyNotice(null)}
+                type="button"
+              >
+                <FiX className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+          </div>
+
+          <div className="px-4 py-4 sm:px-5">
+            <p className="text-sm leading-6 text-slate-600">{applyNotice.message}</p>
+            <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                className="rounded-lg px-5 py-2.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                onClick={() => setApplyNotice(null)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
+                onClick={handleApplyNoticeAction}
+                type="button"
+              >
+                {applyNotice.actionLabel ?? "Got it"}
+                {applyNotice.actionHref ? <FiLogIn className="ml-2 h-4 w-4" aria-hidden /> : null}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+    </div>
+  );
+}
+
+function ApplicationSuccessDialog({
+  message,
+  onClose,
+  title,
+}: {
+  message: string;
+  onClose: () => void;
+  title: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-3 py-5 backdrop-blur-[2px] sm:px-4">
+      <section className="w-full max-w-md overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-2xl shadow-slate-950/20">
+        <div className="border-b border-emerald-100 bg-emerald-50/70 px-4 py-4 sm:px-5">
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">{applyNotice.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{applyNotice.message}</p>
+            <div className="flex min-w-0 gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-100">
+                <FiCheckCircle className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600">
+                  Success
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-slate-950">{title}</h2>
+              </div>
             </div>
             <button
-              aria-label="Close apply message"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              onClick={() => setApplyNotice(null)}
+              aria-label="Close success message"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-white hover:text-slate-700"
+              onClick={onClose}
               type="button"
             >
               <FiX className="h-4 w-4" aria-hidden />
             </button>
           </div>
+        </div>
+
+        <div className="px-4 py-4 sm:px-5">
+          <p className="text-sm leading-6 text-slate-600">{message}</p>
           <div className="mt-5 flex justify-end">
             <button
-              className="rounded-md bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-              onClick={() => setApplyNotice(null)}
+              className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
+              onClick={onClose}
               type="button"
             >
-              Got it
+              Done
             </button>
           </div>
-        </section>
-      ) : null}
-
-      {applyToast ? (
-        <div className="fixed bottom-4 left-4 z-20 rounded-lg border border-emerald-100 bg-white px-4 py-3 text-sm font-semibold text-emerald-700 shadow-xl shadow-slate-950/15">
-          {applyToast}
         </div>
-      ) : null}
+      </section>
     </div>
   );
 }
