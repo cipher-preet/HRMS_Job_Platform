@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const siteConfig = {
   name: "HireOnDeck",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://hireondeck.com",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.hireondeck.com",
   description:
     "Find software engineering, full-stack, backend, frontend, remote and startup jobs across India with HireOnDeck.",
   ogImage: "/logo.png",
