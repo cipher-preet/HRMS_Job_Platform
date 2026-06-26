@@ -1,14 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ReduxProvider } from "./_redux/provider";
 import "./globals.css";
+import { defaultMetadata } from "./seo";
 
-export const metadata: Metadata = {
-  title: "HireOnDeck | Find your next opportunity",
-  description:
-    "Discover relevant jobs and manage your candidate profile with HireOnDeck.",
-  icons: {
-    icon: "/logo.png",
-  },
+export const metadata: Metadata = defaultMetadata;
+
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
+  colorScheme: "light",
 };
 
 export default function RootLayout({
