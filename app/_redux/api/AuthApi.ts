@@ -68,6 +68,11 @@ export type CandidateSessionResponse = {
   };
 };
 
+export type CandidateSignOutResponse = {
+  success: boolean;
+  message: string;
+};
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getCandidateSession: builder.query<CandidateSessionResponse, void>({
@@ -94,12 +99,19 @@ export const authApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    candidateSignOut: builder.mutation<CandidateSignOutResponse, void>({
+      query: () => ({
+        url: "/candidates/sign-out",
+        method: "POST",
+      }),
+    }),
   }),
 });
 
 export const {
   useCandidateLoginMutation,
   useCandidateRegisterMutation,
+  useCandidateSignOutMutation,
   useUploadCandidateResumeMutation,
   useGetCandidateSessionQuery,
   useLazyGetCandidateSessionQuery,

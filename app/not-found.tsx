@@ -23,16 +23,16 @@ export default function NotFound() {
     <div className="min-h-screen text-slate-700">
       <DashboardHeader />
 
-      <main className="mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 sm:py-12">
+      <main className="mx-auto w-full max-w-[1200px] px-3 py-6 sm:px-6 sm:py-12">
         <section className="overflow-hidden rounded-xl border border-blue-100 bg-white shadow-sm shadow-blue-100/50">
-          <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="px-5 py-8 sm:px-8 sm:py-10">
+          <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
+            <div className="min-w-0 px-4 py-8 sm:px-8 sm:py-10">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-blue-700">
                 <FiSearch className="h-3.5 w-3.5" aria-hidden />
                 404 not found
               </div>
 
-              <h1 className="mt-5 max-w-2xl text-3xl font-semibold tracking-[-0.02em] text-slate-950 sm:text-4xl">
+              <h1 className="mt-5 max-w-2xl text-3xl font-semibold text-slate-950 sm:text-4xl">
                 This page is not available
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
@@ -57,7 +57,7 @@ export default function NotFound() {
               </div>
             </div>
 
-            <aside className="border-t border-blue-100 bg-blue-50/50 p-5 sm:p-6 lg:border-l lg:border-t-0">
+            <aside className="min-w-0 border-t border-blue-100 bg-blue-50/50 p-4 sm:p-6 lg:border-l lg:border-t-0">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-500">
                 Quick paths
               </p>
@@ -76,10 +76,10 @@ export default function NotFound() {
                           <Icon className="h-4 w-4" aria-hidden />
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-slate-950">
+                          <span className="break-anywhere block text-sm font-semibold text-slate-950">
                             {link.title}
                           </span>
-                          <span className="mt-1 block text-xs leading-5 text-slate-500">
+                          <span className="break-anywhere mt-1 block text-xs leading-5 text-slate-500">
                             {link.description}
                           </span>
                         </span>

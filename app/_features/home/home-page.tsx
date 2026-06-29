@@ -11,6 +11,7 @@ import {
   FiLogIn,
   FiInstagram,
   FiLinkedin,
+  FiMenu,
   FiMapPin,
   FiX,
 } from "react-icons/fi";
@@ -77,6 +78,7 @@ export function HomePage() {
   } = useGetJobsQuery({ limit: JOBS_PAGE_LIMIT });
   const jobs = useMemo(() => getUniqueJobs(jobsData?.pages.flatMap((page) => page.jobs) ?? []), [jobsData]);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [applicationSuccess, setApplicationSuccess] = useState<ApplicationSuccess | null>(null);
   const {
@@ -109,9 +111,13 @@ export function HomePage() {
       ),
     [filters, jobs],
   );
+  const activeFilterCount = useMemo(
+    () => Object.values(filters).filter((value) => value !== ALL_FILTER).length,
+    [filters],
+  );
 
   useEffect(() => {
-    if (!selectedJob) {
+    if (!selectedJob && !isFilterDrawerOpen) {
       return;
     }
 
@@ -125,7 +131,7 @@ export function HomePage() {
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
-  }, [selectedJob]);
+  }, [isFilterDrawerOpen, selectedJob]);
 
   useEffect(() => {
     const loadMoreElement = loadMoreRef.current;
@@ -150,6 +156,24 @@ export function HomePage() {
     };
   }, [fetchNextPage, hasNextPage, isFetching, isFetchingNextPage]);
 
+  useEffect(() => {
+    if (!isFilterDrawerOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsFilterDrawerOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFilterDrawerOpen]);
+
   function updateFilter(key: FilterKey, value: string) {
     setFilters((current) => ({ ...current, [key]: value }));
   }
@@ -162,69 +186,39 @@ export function HomePage() {
     <div className="min-h-screen text-slate-700">
       <DashboardHeader />
 
-      <main className="mx-auto grid w-full max-w-[1200px] gap-5 px-4 py-5 sm:px-6 sm:py-7 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6">
-        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-          <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50">
-            <div className="border-b border-blue-100/70 bg-blue-50/50 px-4 py-3.5">
-              <div className="flex items-center gap-3">
-                <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-blue-600 shadow-sm ring-1 ring-blue-100">
-                  <FiFilter className="h-4 w-4" aria-hidden />
-                </span>
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-blue-500">
-                    Filters
-                  </p>
-                  <h2 className="mt-0.5 text-sm font-semibold text-slate-950">Refine matches</h2>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2.5 p-3">
-              <FilterBox
-                title="Filter by location"
-                name="location"
-                options={filterOptions.location}
-                selectedValue={filters.location}
-                onChange={(value) => updateFilter("location", value)}
-              />
-              <FilterBox
-                title="Filter by work mode"
-                name="workMode"
-                options={filterOptions.workMode}
-                selectedValue={filters.workMode}
-                onChange={(value) => updateFilter("workMode", value)}
-              />
-              <FilterBox
-                title="Filter by job type"
-                name="jobType"
-                options={filterOptions.jobType}
-                selectedValue={filters.jobType}
-                onChange={(value) => updateFilter("jobType", value)}
-              />
-              <FilterBox
-                title="Filter by experience"
-                name="experience"
-                options={filterOptions.experience}
-                selectedValue={filters.experience}
-                onChange={(value) => updateFilter("experience", value)}
-              />
-              <button
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50/50 hover:text-blue-700"
-                onClick={clearFilters}
-                type="button"
-              >
-                Clear filters
-              </button>
-            </div>
-          </div>
+      <main className="mx-auto grid w-full max-w-[1200px] gap-4 px-3 py-4 sm:gap-5 sm:px-6 sm:py-7 lg:grid-cols-[minmax(220px,260px)_minmax(0,1fr)] lg:gap-6">
+        <aside className="hidden min-w-0 space-y-4 lg:sticky lg:top-24 lg:block lg:self-start">
+          <FilterPanel
+            filterOptions={filterOptions}
+            filters={filters}
+            onClear={clearFilters}
+            onUpdate={updateFilter}
+          />
           <FollowUsCard />
         </aside>
 
-        <section className="space-y-3">
-          <div className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-[13px] shadow-sm shadow-slate-200/40">
+        <section className="min-w-0 space-y-3">
+          <div className="flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-[13px] shadow-sm shadow-slate-200/40 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
             <p className="font-medium text-slate-700">
               {isLoading ? "Loading jobs..." : `${filteredJobs.length} jobs found`}
             </p>
-            {isError ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                aria-expanded={isFilterDrawerOpen}
+                aria-controls="mobile-filter-drawer"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:border-blue-200 hover:bg-blue-100 lg:hidden"
+                onClick={() => setIsFilterDrawerOpen(true)}
+                type="button"
+              >
+                <FiMenu className="h-4 w-4" aria-hidden />
+                Filters
+                {activeFilterCount > 0 ? (
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-blue-600 px-1 text-[10px] leading-none text-white">
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+              </button>
+              {isError ? (
               <button
                 className="text-xs font-semibold text-slate-700 underline underline-offset-4"
                 onClick={() => refetch()}
@@ -232,7 +226,8 @@ export function HomePage() {
               >
                 Retry
               </button>
-            ) : null}
+              ) : null}
+            </div>
           </div>
 
           {isLoading ? <JobsState message="Fetching latest published jobs..." /> : null}
@@ -252,6 +247,69 @@ export function HomePage() {
       </main>
 
       <DashboardFooter />
+
+      <div
+        className={`fixed inset-0 z-50 lg:hidden ${
+          isFilterDrawerOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
+        <button
+          aria-label="Close filters"
+          className={`absolute inset-0 bg-slate-950/45 backdrop-blur-[2px] transition-opacity duration-300 ${
+            isFilterDrawerOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={() => setIsFilterDrawerOpen(false)}
+          type="button"
+        />
+        <section
+          aria-modal="true"
+          className={`absolute inset-y-0 left-0 flex w-[min(88vw,360px)] flex-col overflow-hidden bg-white shadow-2xl shadow-slate-950/25 transition-transform duration-300 ease-out ${
+            isFilterDrawerOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+          id="mobile-filter-drawer"
+          role="dialog"
+        >
+          <div className="flex items-start justify-between gap-3 border-b border-blue-100 bg-blue-50/60 px-4 py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-blue-600 shadow-sm ring-1 ring-blue-100">
+                <FiFilter className="h-4 w-4" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-500">
+                  Filters
+                </p>
+                <h2 className="mt-0.5 text-base font-semibold text-slate-950">Refine matches</h2>
+              </div>
+            </div>
+            <button
+              aria-label="Close filters"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-500 transition hover:bg-white hover:text-slate-800"
+              onClick={() => setIsFilterDrawerOpen(false)}
+              type="button"
+            >
+              <FiX className="h-5 w-5" aria-hidden />
+            </button>
+          </div>
+          <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
+            <FilterPanel
+              filterOptions={filterOptions}
+              filters={filters}
+              onClear={clearFilters}
+              onUpdate={updateFilter}
+              variant="drawer"
+            />
+          </div>
+          <div className="border-t border-slate-100 bg-white p-3">
+            <button
+              className="h-11 w-full rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
+              onClick={() => setIsFilterDrawerOpen(false)}
+              type="button"
+            >
+              Show {filteredJobs.length} jobs
+            </button>
+          </div>
+        </section>
+      </div>
 
       {selectedJob ? (
         <JobModal
@@ -317,6 +375,87 @@ function formatSalary(salaryRange: string | null | undefined) {
   return value === "Not specified" ? value : `${value} LPA`;
 }
 
+function FilterPanel({
+  filterOptions,
+  filters,
+  onClear,
+  onUpdate,
+  variant = "sidebar",
+}: {
+  filterOptions: Record<FilterKey, FilterOption[]>;
+  filters: Filters;
+  onClear: () => void;
+  onUpdate: (key: FilterKey, value: string) => void;
+  variant?: "sidebar" | "drawer";
+}) {
+  const isDrawer = variant === "drawer";
+
+  return (
+    <div
+      className={
+        isDrawer
+          ? "min-w-0"
+          : "overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50"
+      }
+    >
+      {!isDrawer ? (
+        <div className="border-b border-blue-100/70 bg-blue-50/50 px-4 py-3.5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white text-blue-600 shadow-sm ring-1 ring-blue-100">
+              <FiFilter className="h-4 w-4" aria-hidden />
+            </span>
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-blue-500">
+                Filters
+              </p>
+              <h2 className="mt-0.5 text-sm font-semibold text-slate-950">Refine matches</h2>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      <div className={isDrawer ? "grid gap-2.5" : "grid gap-2.5 p-3 sm:grid-cols-2 lg:grid-cols-1"}>
+        <FilterBox
+          title="Filter by location"
+          name="location"
+          options={filterOptions.location}
+          selectedValue={filters.location}
+          onChange={(value) => onUpdate("location", value)}
+        />
+        <FilterBox
+          title="Filter by work mode"
+          name="workMode"
+          options={filterOptions.workMode}
+          selectedValue={filters.workMode}
+          onChange={(value) => onUpdate("workMode", value)}
+        />
+        <FilterBox
+          title="Filter by job type"
+          name="jobType"
+          options={filterOptions.jobType}
+          selectedValue={filters.jobType}
+          onChange={(value) => onUpdate("jobType", value)}
+        />
+        <FilterBox
+          title="Filter by experience"
+          name="experience"
+          options={filterOptions.experience}
+          selectedValue={filters.experience}
+          onChange={(value) => onUpdate("experience", value)}
+        />
+        <button
+          className={`h-11 w-full rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50/50 hover:text-blue-700 ${
+            isDrawer ? "" : "sm:col-span-2 lg:col-span-1"
+          }`}
+          onClick={onClear}
+          type="button"
+        >
+          Clear filters
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function FilterBox({
   title,
   name,
@@ -331,7 +470,7 @@ function FilterBox({
   onChange: (value: string) => void;
 }) {
   return (
-    <section className="rounded-lg border border-slate-100 bg-white p-3">
+    <section className="min-w-0 rounded-lg border border-slate-100 bg-white p-3">
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <h2 className="text-[12px] font-semibold text-slate-800">{title}</h2>
         <span className="h-1.5 w-1.5 rounded-full bg-blue-300" />
@@ -356,7 +495,7 @@ function FilterBox({
                 type="radio"
                 className="h-3.5 w-3.5 shrink-0 accent-blue-600"
               />
-              <span>
+              <span className="min-w-0 flex-1 break-anywhere">
                 {option.label} ({option.count})
               </span>
             </label>
@@ -432,12 +571,12 @@ function FollowUsCard() {
       <p className="mt-2 text-[11px] leading-5 text-slate-500">
         Get hiring updates, career events and new opportunities first.
       </p>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <button className="inline-flex h-9 items-center justify-center rounded-lg bg-[#0a66c2] px-2 text-[11px] font-semibold text-white transition hover:bg-[#084e96]">
+      <div className="mt-3 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
+        <button className="inline-flex h-10 items-center justify-center rounded-lg bg-[#0a66c2] px-2 text-[11px] font-semibold text-white transition hover:bg-[#084e96]">
           <FiLinkedin className="mr-1.5 h-3.5 w-3.5" aria-hidden />
           LinkedIn
         </button>
-        <button className="inline-flex h-9 items-center justify-center rounded-lg bg-sky-500 px-2 text-[11px] font-semibold text-white transition hover:bg-sky-600">
+        <button className="inline-flex h-10 items-center justify-center rounded-lg bg-sky-500 px-2 text-[11px] font-semibold text-white transition hover:bg-sky-600">
           <FiInstagram className="mr-1.5 h-3.5 w-3.5" aria-hidden />
           Instagram
         </button>
@@ -451,24 +590,24 @@ function JobCard({ job, onView }: { job: Job; onView: () => void }) {
     .filter((value, index, values) => value !== "Not specified" && values.indexOf(value) === index);
 
   return (
-    <article className="grid overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/40 transition duration-200 hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/60 md:grid-cols-[minmax(0,1fr)_120px] md:hover:-translate-y-0.5">
-      <div className="min-w-0 px-4 py-4 sm:px-5">
-        <div className="flex min-w-0 gap-3 sm:gap-4">
+    <article className="grid min-w-0 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/40 transition duration-200 hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/60 md:grid-cols-[minmax(0,1fr)_132px] md:hover:-translate-y-0.5">
+      <div className="min-w-0 px-3 py-4 sm:px-5">
+        <div className="flex min-w-0 flex-col gap-3 min-[380px]:flex-row sm:gap-4">
           <CompanyLogo job={job} size="card" />
           <div className="min-w-0 flex-1">
             <div className="min-w-0">
               <p className="text-[12px] font-medium text-blue-600">{cleanValue(job.company)}</p>
-              <h2 className="mt-1 overflow-hidden text-ellipsis text-[16px] font-semibold leading-snug tracking-[-0.01em] text-slate-950 sm:text-[17px]">
+              <h2 className="break-anywhere mt-1 text-[16px] font-semibold leading-snug text-slate-950 sm:text-[17px]">
                 {cleanValue(job.title)}
               </h2>
             </div>
 
-            <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-medium text-slate-500">
-              <span className="inline-flex items-center gap-1.5">
+            <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] font-medium text-slate-500">
+              <span className="inline-flex min-w-0 items-center gap-1.5 break-anywhere">
                 <FiMapPin className="h-3.5 w-3.5 text-slate-400" aria-hidden />
                 {cleanValue(job.location)}
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex min-w-0 items-center gap-1.5 break-anywhere">
                 <FiBriefcase className="h-3.5 w-3.5 text-slate-400" aria-hidden />
                 {cleanValue(job.experience)}
               </span>
@@ -476,7 +615,7 @@ function JobCard({ job, onView }: { job: Job; onView: () => void }) {
               <span>{cleanValue(job.size)}</span>
             </div>
 
-            <p className="mt-2.5 line-clamp-2 max-w-[650px] text-[13px] leading-5.5 text-slate-600">
+            <p className="break-anywhere mt-2.5 line-clamp-3 max-w-[650px] text-[13px] leading-6 text-slate-600 sm:line-clamp-2">
               {cleanValue(job.description)}
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
@@ -493,9 +632,9 @@ function JobCard({ job, onView }: { job: Job; onView: () => void }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-stretch border-t border-slate-100 bg-slate-50/40 px-4 py-3 md:justify-center md:border-l md:border-t-0">
+      <div className="flex items-center justify-stretch border-t border-slate-100 bg-slate-50/40 px-3 py-3 sm:px-4 md:justify-center md:border-l md:border-t-0">
         <button
-          className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-blue-600 px-4 text-[13px] font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 md:w-auto md:min-w-20"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-blue-600 px-4 text-[13px] font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 md:w-auto md:min-w-24"
           onClick={onView}
           type="button"
         >
@@ -625,15 +764,15 @@ function JobModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden overscroll-none bg-slate-950/50 px-2 py-3 backdrop-blur-[2px] sm:px-4 sm:py-6">
-      <section className="flex max-h-[calc(100vh-24px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-h-[calc(100vh-48px)]">
-        <div className="flex items-start justify-between gap-3 border-b border-blue-100/70 bg-blue-50/40 px-4 py-4 sm:gap-4 sm:px-5">
+    <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-end justify-center overflow-hidden overscroll-none bg-slate-950/50 px-0 py-0 backdrop-blur-[2px] sm:items-center sm:px-4 sm:py-6">
+      <section className="modal-sheet-enter flex max-h-[100dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-h-[calc(100dvh-48px)] sm:rounded-2xl">
+        <div className="flex items-start justify-between gap-3 border-b border-blue-100/70 bg-blue-50/40 px-3 py-4 sm:gap-4 sm:px-5">
           <div className="min-w-0">
             <div className="flex min-w-0 gap-3">
               <CompanyLogo job={job} size="card" />
               <div className="min-w-0">
                 <p className="text-[12px] font-medium text-blue-600">{cleanValue(visibleJob.company)}</p>
-                <h2 className="mt-1 overflow-hidden text-ellipsis text-lg font-semibold leading-snug text-slate-950 sm:text-xl sm:leading-tight">
+                <h2 className="break-anywhere mt-1 text-lg font-semibold leading-snug text-slate-950 sm:text-xl sm:leading-tight">
                   {cleanValue(visibleJob.title)}
                 </h2>
                 <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-medium text-slate-600">
@@ -660,21 +799,21 @@ function JobModal({
           </button>
         </div>
 
-        <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-4 py-4 sm:px-5 sm:py-5">
+        <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-3 py-4 sm:px-5 sm:py-5">
           {isLoading ? (
             <ModalState message="Loading job details..." />
           ) : isError ? (
             <ModalState actionLabel="Retry" message="Unable to load job details." onAction={onRetry} />
           ) : (
             <>
-          <div className="grid gap-2 sm:grid-cols-4">
+          <div className="grid gap-2 min-[420px]:grid-cols-2 lg:grid-cols-4">
             <SummaryTile label="Job type" value={cleanValue(job.jobType)} />
             <SummaryTile label="Work mode" value={cleanValue(job.workMode)} />
             <SummaryTile label="Founded" value={cleanValue(job.founded)} />
             <SummaryTile label="Openings" value={cleanValue(job.openings)} />
           </div>
 
-          <div className="mt-2 grid gap-2 sm:grid-cols-4">
+          <div className="mt-2 grid gap-2 min-[420px]:grid-cols-2 lg:grid-cols-4">
             <SummaryTile label="Salary" value={formatSalary(job.salaryRange)} />
             <SummaryTile label="Education" value={cleanValue(job.education)} />
             <SummaryTile label="Notice" value={cleanValue(job.noticePeriod)} />
@@ -756,7 +895,7 @@ function JobModal({
           )}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-slate-100 bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="flex flex-col gap-3 border-t border-slate-100 bg-white px-3 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <p className="text-xs font-medium text-slate-500">
             Applying shares your profile with {cleanValue(visibleJob.company)}.
           </p>
@@ -775,7 +914,7 @@ function JobModal({
       </section>
 
       {applyNotice ? (
-        <section className="absolute inset-x-3 top-1/2 z-10 mx-auto w-full max-w-md -translate-y-1/2 overflow-hidden rounded-xl border border-blue-100 bg-white shadow-2xl shadow-slate-950/20">
+        <section className="modal-floating-panel-enter absolute inset-x-3 top-1/2 z-10 mx-auto w-[calc(100%-24px)] max-w-md overflow-hidden rounded-xl border border-blue-100 bg-white shadow-2xl shadow-slate-950/20">
           <div className="border-b border-blue-100 bg-blue-50/60 px-4 py-4 sm:px-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 gap-3">
@@ -837,8 +976,8 @@ function ApplicationSuccessDialog({
   title: string;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-3 py-5 backdrop-blur-[2px] sm:px-4">
-      <section className="w-full max-w-md overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-2xl shadow-slate-950/20">
+    <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-3 py-5 backdrop-blur-[2px] sm:px-4">
+      <section className="modal-panel-enter w-full max-w-md overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-2xl shadow-slate-950/20">
         <div className="border-b border-emerald-100 bg-emerald-50/70 px-4 py-4 sm:px-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 gap-3">
@@ -882,11 +1021,11 @@ function ApplicationSuccessDialog({
 
 function SummaryTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-blue-100/70 bg-blue-50/50 px-3 py-2.5">
+    <div className="min-w-0 rounded-lg border border-blue-100/70 bg-blue-50/50 px-3 py-2.5">
       <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">
         {label}
       </p>
-      <p className="mt-1 text-[12px] font-semibold text-slate-800">{value}</p>
+      <p className="break-anywhere mt-1 text-[12px] font-semibold text-slate-800">{value}</p>
     </div>
   );
 }

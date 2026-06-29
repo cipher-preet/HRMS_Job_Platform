@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { FiAlertCircle, FiBriefcase, FiLogOut, FiUpload, FiUser, FiX } from "react-icons/fi";
+import { useCandidateSignOut } from "../_hooks/use-candidate-sign-out";
 import { useGetCandidateSessionQuery, useUploadCandidateResumeMutation } from "../_redux/api/AuthApi";
 
 const navItems = [
@@ -12,19 +13,16 @@ const navItems = [
   { label: "Profile", href: "/profile", icon: FiUser },
 ];
 
-const AUTH_STORAGE_KEY = "hireondeck-auth";
-
 export function DashboardHeader() {
   const pathname = usePathname();
-  const router = useRouter();
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
-  const [isLocallySignedOut, setIsLocallySignedOut] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<{ title: string; message: string } | null>(null);
   const { data: candidateSession, refetch: refetchCandidateSession } = useGetCandidateSessionQuery(undefined, {
     refetchOnMountOrArgChange: true,
   });
   const [uploadCandidateResume, { isLoading: isUploadingResume }] = useUploadCandidateResumeMutation();
-  const isSignedIn = !isLocallySignedOut && Boolean(candidateSession?.success);
+  const { isSigningOut, signOut } = useCandidateSignOut();
+  const isSignedIn = Boolean(candidateSession?.success);
 
   const handleResumeUpload = async (file: File) => {
     if (!isSignedIn) {
@@ -62,18 +60,16 @@ export function DashboardHeader() {
     }
   };
 
-  const handleConfirmSignOut = () => {
-    localStorage.setItem(AUTH_STORAGE_KEY, "signed-out");
-    setIsLocallySignedOut(true);
+  const handleConfirmSignOut = async () => {
+    await signOut();
     setShowSignOutConfirm(false);
-    router.push("/profile");
   };
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2.5 px-4 py-2.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <Link className="flex w-fit items-center gap-2.5" href="/">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-3 py-2.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <Link className="flex w-fit max-w-full items-center gap-2.5" href="/">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center sm:h-12 sm:w-12">
               <Image
                 alt="HireOnDeck logo"
@@ -85,7 +81,7 @@ export function DashboardHeader() {
               />
             </span>
             <span className="flex min-w-0 flex-col justify-center">
-              <span className="text-[17px] font-bold leading-tight tracking-[-0.02em] text-slate-950 sm:text-lg">
+              <span className="text-[17px] font-bold leading-tight text-slate-950 sm:text-lg">
                 HireOnDeck
               </span>
               <span className="mt-0.5 hidden text-[9px] font-semibold uppercase leading-4 tracking-[0.16em] text-slate-400 sm:block">
@@ -96,10 +92,10 @@ export function DashboardHeader() {
 
           <nav
             aria-label="Primary navigation"
-            className="thin-scrollbar flex w-full max-w-full items-center gap-1 overflow-x-auto rounded-xl border border-slate-200/80 bg-slate-50/80 p-1 text-[11px] font-semibold lg:w-auto"
+            className="thin-scrollbar grid w-full grid-flow-col auto-cols-max items-center gap-1 overflow-x-auto rounded-xl border border-slate-200/80 bg-slate-50/80 p-1 text-[11px] font-semibold sm:flex sm:flex-wrap sm:overflow-visible lg:w-auto lg:justify-end"
           >
             <label
-              className={`flex h-9 shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-3.5 text-white shadow-sm shadow-blue-200 transition ${
+              className={`flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3.5 text-white shadow-sm shadow-blue-200 transition sm:h-10 ${
                 isUploadingResume ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-blue-700"
               }`}
             >
@@ -128,7 +124,7 @@ export function DashboardHeader() {
               return (
                 <Link
                   key={item.href}
-                  className={`flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 transition ${
+                  className={`flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg px-3 transition sm:h-10 ${
                     isActive
                       ? "bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/80"
                       : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm"
@@ -147,12 +143,13 @@ export function DashboardHeader() {
             })}
             {isSignedIn ? (
               <button
-                className="flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-slate-600 transition hover:bg-white hover:text-slate-900 hover:shadow-sm"
+                className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg px-3 text-slate-600 transition hover:bg-white hover:text-slate-900 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 sm:h-10"
+                disabled={isSigningOut}
                 onClick={() => setShowSignOutConfirm(true)}
                 type="button"
               >
                 <FiLogOut className="h-3.5 w-3.5" aria-hidden />
-                <span className="whitespace-nowrap">Sign Out</span>
+                <span className="whitespace-nowrap">{isSigningOut ? "Signing out..." : "Sign Out"}</span>
               </button>
             ) : null}
           </nav>
@@ -160,14 +157,14 @@ export function DashboardHeader() {
       </header>
 
       {showSignOutConfirm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-3 py-5 sm:px-4">
-          <section className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-950/15 sm:p-5">
+        <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-3 py-5 sm:px-4">
+          <section className="modal-panel-enter w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-950/15 sm:p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex gap-3">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-50 text-slate-500 ring-1 ring-slate-100">
                   <FiAlertCircle className="h-5 w-5" aria-hidden />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-lg font-semibold text-slate-950">Sign out?</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     You will be signed out of this candidate workspace.
@@ -192,11 +189,12 @@ export function DashboardHeader() {
                 Cancel
               </button>
               <button
-                className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isSigningOut}
                 onClick={handleConfirmSignOut}
                 type="button"
               >
-                Yes, sign out
+                {isSigningOut ? "Signing out..." : "Yes, sign out"}
               </button>
             </div>
           </section>
@@ -204,10 +202,10 @@ export function DashboardHeader() {
       ) : null}
 
       {uploadMessage ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-3 py-5 sm:px-4">
-          <section className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-950/15 sm:p-5">
+        <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-3 py-5 sm:px-4">
+          <section className="modal-panel-enter w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-950/15 sm:p-5">
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-lg font-semibold text-slate-950">{uploadMessage.title}</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{uploadMessage.message}</p>
               </div>
