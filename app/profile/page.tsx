@@ -606,15 +606,6 @@ function ProfileAuthScreen({
               <p className="text-lg font-semibold tracking-tight">HireOnDeck</p>
             </div>
 
-            <div className="pointer-events-none absolute right-8 top-28 hidden w-[230px] rounded-lg border border-white/15 bg-white p-3.5 text-slate-900 shadow-2xl shadow-slate-950/30 xl:block">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#3b82f6]">Open role</p>
-              <p className="mt-1.5 text-sm font-semibold">Product Designer</p>
-              <p className="mt-1 text-xs text-slate-500">Remote · Full-time</p>
-              <span className="mt-3 inline-flex h-8 items-center rounded-md bg-[#3b82f6] px-3 text-[11px] font-semibold text-white">
-                Apply now
-              </span>
-            </div>
-
             <div className="max-w-md">
               <div className="mb-4 flex flex-wrap gap-2">
                 {["Open jobs", "Resume upload", "Fast apply"].map((label) => (

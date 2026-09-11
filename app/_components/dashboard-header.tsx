@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { FiAlertCircle, FiBell, FiLogOut, FiMenu, FiUpload, FiUser, FiX } from "react-icons/fi";
+import { FiAlertCircle, FiLogOut, FiMenu, FiUpload, FiUser, FiX } from "react-icons/fi";
 import { useCandidateSignOut } from "../_hooks/use-candidate-sign-out";
 import { useGetCandidateSessionQuery, useUploadCandidateResumeMutation } from "../_redux/api/AuthApi";
 
@@ -18,7 +18,6 @@ export function DashboardHeader() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<{ title: string; message: string } | null>(null);
   const { data: candidateSession, refetch: refetchCandidateSession } = useGetCandidateSessionQuery(undefined, {
@@ -34,14 +33,12 @@ export function DashboardHeader() {
   const closeMenus = () => {
     setIsMobileNavOpen(false);
     setIsUserMenuOpen(false);
-    setIsNotificationsOpen(false);
   };
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
       if (!menuRef.current?.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
-        setIsNotificationsOpen(false);
       }
     }
 
@@ -138,23 +135,10 @@ export function DashboardHeader() {
           </nav>
 
           <div className="relative flex shrink-0 items-center justify-end gap-2" ref={menuRef}>
-            <button
-              aria-label="Notifications"
-              className="relative grid h-10 w-10 place-items-center rounded-full text-white transition hover:bg-white/10 hover:text-white"
-              onClick={() => {
-                setIsUserMenuOpen(false);
-                setIsNotificationsOpen((open) => !open);
-              }}
-              type="button"
-            >
-              <FiBell className="h-4 w-4" aria-hidden />
-            </button>
-
             {isSignedIn ? (
               <button
                 className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2 text-left transition hover:bg-white/10"
                 onClick={() => {
-                  setIsNotificationsOpen(false);
                   setIsUserMenuOpen((open) => !open);
                 }}
                 type="button"
@@ -183,13 +167,6 @@ export function DashboardHeader() {
             >
               <FiMenu className="h-5 w-5" aria-hidden />
             </button>
-
-            {isNotificationsOpen ? (
-              <div className="absolute right-0 top-[48px] z-50 w-[min(calc(100vw-24px),320px)] rounded-2xl border border-slate-100 bg-white p-4 shadow-2xl shadow-slate-950/15 sm:top-[52px]">
-                <p className="text-sm font-semibold text-slate-950">Notifications</p>
-                <p className="mt-1 text-sm leading-6 text-slate-500">You are all caught up. New job matches will appear here.</p>
-              </div>
-            ) : null}
 
             {isUserMenuOpen && isSignedIn ? (
               <div className="header-menu absolute right-0 top-[48px] z-50 w-[min(calc(100vw-24px),240px)] overflow-hidden rounded-2xl border border-slate-100 bg-white py-1.5 text-slate-700 shadow-2xl shadow-slate-950/15 sm:top-[52px]">

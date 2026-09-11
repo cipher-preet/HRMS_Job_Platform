@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type RefObject } from "react";
 import Image from "next/image";
 import {
   FiAlertCircle,
@@ -110,7 +110,7 @@ export function HomePage() {
   const {
     data: selectedJobDetail,
     isError: isJobDetailError,
-    isFetching: isJobDetailLoading,
+    isLoading: isJobDetailLoading,
     refetch: refetchJobDetail,
   } = useGetJobByIdQuery(selectedJob?.id ?? "", {
     skip: !selectedJob,
@@ -887,9 +887,46 @@ function JobWorkspace({
   savedJobIds: string[];
   selectedJob: Job;
 }) {
+  const descriptionRef = useRef<HTMLDivElement | null>(null);
+  const [listHeight, setListHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const element = descriptionRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const updateHeight = () => {
+      const nextHeight = Math.round(element.getBoundingClientRect().height);
+
+      setListHeight((currentHeight) => {
+        if (nextHeight <= 0) {
+          return currentHeight;
+        }
+
+        if (isLoading && currentHeight > 0) {
+          return currentHeight;
+        }
+
+        return nextHeight;
+      });
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [isError, isLoading, selectedJob.id]);
+
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[minmax(260px,280px)_minmax(0,1fr)] lg:gap-4">
-      <aside className="job-list-panel hidden min-w-0 lg:sticky lg:top-[88px] lg:flex lg:h-[calc(100dvh-104px)] lg:flex-col">
+    <div className="grid gap-4 lg:grid-cols-[minmax(260px,280px)_minmax(0,1fr)] xl:grid-cols-[minmax(260px,280px)_minmax(0,1fr)_minmax(260px,300px)]">
+      <aside
+        className="job-list-panel hidden min-h-[min(640px,calc(100dvh-180px))] min-w-0 flex-col self-start overflow-hidden lg:col-start-1 lg:row-start-1 lg:flex"
+        style={listHeight > 0 ? { height: listHeight, minHeight: listHeight } : undefined}
+      >
         <button
           className="mb-3 inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-950"
           onClick={onBack}
@@ -914,7 +951,11 @@ function JobWorkspace({
         </div>
       </aside>
 
-      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(260px,300px)]">
+      <div
+        ref={descriptionRef}
+        className="min-w-0 self-start lg:col-start-2 lg:row-start-1"
+        style={isLoading && listHeight > 0 ? { minHeight: listHeight } : undefined}
+      >
         <JobDetailPanel
           fallbackJob={fallbackJob}
           isError={isError}
@@ -923,7 +964,9 @@ function JobWorkspace({
           onBack={onBack}
           onRetry={onRetry}
         />
+      </div>
 
+      <div className="min-w-0 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:self-start">
         <CompanyPanel job={isLoading ? fallbackJob : selectedJob} onAppliedSuccess={onAppliedSuccess} />
       </div>
     </div>
@@ -945,14 +988,21 @@ function JobDetailPanel({
   onBack: () => void;
   onRetry: () => void;
 }) {
-  const visibleJob = isLoading ? fallbackJob : job;
-  const tags = getJobTags(visibleJob);
-  const responsibilityItems = job.responsibilities ?? [];
-  const requirementItems = job.requirements ?? [];
-  const skillItems = job.tags ?? [];
+  const lastReadyJobRef = useRef(job);
+
+  if (!isLoading && !isError) {
+    lastReadyJobRef.current = job;
+  }
+
+  const displayJob = isLoading ? lastReadyJobRef.current : job;
+  const tags = getJobTags(displayJob);
+  const responsibilityItems = displayJob.responsibilities ?? [];
+  const requirementItems = displayJob.requirements ?? [];
+  const skillItems = displayJob.tags ?? [];
+  const hasReadyContent = Boolean(displayJob.description || (displayJob.responsibilities?.length ?? 0) > 0);
 
   return (
-    <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
+    <section className="h-full min-h-full min-w-0 rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
       <button
         className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-slate-900 lg:hidden"
         onClick={onBack}
@@ -964,7 +1014,7 @@ function JobDetailPanel({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <h2 className="break-anywhere text-[22px] font-semibold tracking-tight text-slate-950 sm:text-[26px]">
-          {cleanValue(visibleJob.title)}
+          {cleanValue(isLoading ? fallbackJob.title : displayJob.title)}
         </h2>
         <div className="flex flex-wrap gap-1.5">
           {tags.map((tag) => (
@@ -978,7 +1028,7 @@ function JobDetailPanel({
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoading && !hasReadyContent ? (
         <p className="mt-8 text-sm font-medium text-slate-400">Loading job details...</p>
       ) : isError ? (
         <div className="mt-8">
@@ -995,7 +1045,7 @@ function JobDetailPanel({
         <>
           <section className="mt-8">
             <h3 className="text-lg font-semibold text-slate-950">About the role</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-500">{cleanValue(job.description)}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-500">{cleanValue(displayJob.description)}</p>
           </section>
 
           <DetailList items={responsibilityItems} title="Responsibilities" />
