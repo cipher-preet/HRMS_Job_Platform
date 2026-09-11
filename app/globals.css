@@ -1,26 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f8fc;
-  --foreground: #1e293b;
+  --background: #eef2f8;
+  --foreground: #0f172a;
   --surface: #ffffff;
-  --brand: #2563eb;
+  --header: #0b0d12;
+  --brand: #3b82f6;
+  --brand-strong: #2563eb;
   --brand-soft: #eff6ff;
+  --muted: #64748b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-header: var(--header);
+  --color-brand: var(--brand);
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "Courier New", Courier, monospace;
 }
 
 body {
-  background:
-    radial-gradient(circle at 8% 0%, rgb(219 234 254 / 0.46), transparent 26rem),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
   line-height: 1.5;
   overflow-x: hidden;
@@ -33,6 +36,7 @@ body {
 html {
   scroll-behavior: smooth;
   text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 button,
@@ -48,6 +52,16 @@ label {
   -webkit-tap-highlight-color: transparent;
 }
 
+button:not(:disabled),
+a,
+label {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 ::selection {
   background: #dbeafe;
   color: #1e3a8a;
@@ -56,6 +70,10 @@ label {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.header-menu a {
+  color: #334155;
 }
 
 img,
@@ -73,6 +91,27 @@ button {
 .break-anywhere {
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.hero-burst {
+  clip-path: polygon(
+    50% 0%,
+    63% 16%,
+    85% 10%,
+    80% 34%,
+    100% 48%,
+    80% 62%,
+    86% 88%,
+    62% 82%,
+    50% 100%,
+    38% 82%,
+    14% 88%,
+    20% 62%,
+    0% 48%,
+    20% 34%,
+    15% 10%,
+    37% 16%
+  );
 }
 
 .modal-backdrop-enter {
@@ -155,6 +194,41 @@ button {
 .thin-scrollbar {
   scrollbar-color: #cbd5e1 transparent;
   scrollbar-width: thin;
+}
+
+.job-list-scroll {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.job-list-panel:hover .job-list-scroll,
+.job-list-panel:focus-within .job-list-scroll {
+  scrollbar-color: #94a3b8 transparent;
+}
+
+.job-list-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.job-list-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.job-list-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.job-list-panel:hover .job-list-scroll::-webkit-scrollbar-thumb,
+.job-list-panel:focus-within .job-list-scroll::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+}
+
+.job-list-panel:hover .job-list-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
 }
 
 .thin-scrollbar::-webkit-scrollbar {

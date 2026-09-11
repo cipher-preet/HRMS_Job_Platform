@@ -3,18 +3,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { FiAlertCircle, FiBriefcase, FiLogOut, FiUpload, FiUser, FiX } from "react-icons/fi";
+import { useEffect, useRef, useState } from "react";
+import { FiAlertCircle, FiBell, FiLogOut, FiMenu, FiUpload, FiUser, FiX } from "react-icons/fi";
 import { useCandidateSignOut } from "../_hooks/use-candidate-sign-out";
 import { useGetCandidateSessionQuery, useUploadCandidateResumeMutation } from "../_redux/api/AuthApi";
 
 const navItems = [
-  { label: "Jobs", href: "/", badge: "15", icon: FiBriefcase },
-  { label: "Profile", href: "/profile", icon: FiUser },
+  { label: "Find Jobs", href: "/" },
+  { label: "Profile", href: "/profile" },
 ];
 
 export function DashboardHeader() {
   const pathname = usePathname();
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<{ title: string; message: string } | null>(null);
   const { data: candidateSession, refetch: refetchCandidateSession } = useGetCandidateSessionQuery(undefined, {
@@ -22,7 +26,32 @@ export function DashboardHeader() {
   });
   const [uploadCandidateResume, { isLoading: isUploadingResume }] = useUploadCandidateResumeMutation();
   const { isSigningOut, signOut } = useCandidateSignOut();
-  const isSignedIn = Boolean(candidateSession?.success);
+  const candidate = candidateSession?.success ? candidateSession.data?.candidate : undefined;
+  const isSignedIn = Boolean(candidate);
+  const displayName = candidate?.name?.trim() || "Candidate";
+  const initials = getInitials(displayName);
+
+  const closeMenus = () => {
+    setIsMobileNavOpen(false);
+    setIsUserMenuOpen(false);
+    setIsNotificationsOpen(false);
+  };
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+        setIsNotificationsOpen(false);
+      }
+    }
+
+    window.addEventListener("mousedown", handlePointerDown);
+    return () => window.removeEventListener("mousedown", handlePointerDown);
+  }, []);
+
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+  }, [pathname]);
 
   const handleResumeUpload = async (file: File) => {
     if (!isSignedIn) {
@@ -67,106 +96,212 @@ export function DashboardHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-3 py-2.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <Link className="flex w-fit max-w-full items-center gap-2.5" href="/">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center sm:h-12 sm:w-12">
+      <header className="sticky top-0 z-40 bg-[#0b0d12] text-white">
+        <div className="relative mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between gap-2 px-3 sm:h-[72px] sm:gap-4 sm:px-6">
+          <Link className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-2.5" href="/" onClick={closeMenus}>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white p-1 sm:h-11 sm:w-11">
               <Image
                 alt="HireOnDeck logo"
                 className="h-full w-full object-contain"
-                height={48}
+                height={44}
                 priority
                 src="/logo.png"
-                width={48}
+                width={44}
               />
             </span>
-            <span className="flex min-w-0 flex-col justify-center">
-              <span className="text-[17px] font-bold leading-tight text-slate-950 sm:text-lg">
-                HireOnDeck
-              </span>
-              <span className="mt-0.5 hidden text-[9px] font-semibold uppercase leading-4 tracking-[0.16em] text-slate-400 sm:block">
-                Opportunities open. Careers begin.
-              </span>
+            <span className="hidden truncate text-[15px] font-semibold tracking-tight text-white min-[400px]:inline sm:text-base">
+              HireOnDeck
             </span>
           </Link>
 
           <nav
             aria-label="Primary navigation"
-            className="thin-scrollbar grid w-full grid-flow-col auto-cols-max items-center gap-1 overflow-x-auto rounded-xl border border-slate-200/80 bg-slate-50/80 p-1 text-[11px] font-semibold sm:flex sm:flex-wrap sm:overflow-visible lg:w-auto lg:justify-end"
+            className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-5 lg:gap-8 md:flex"
           >
-            <label
-              className={`flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-3.5 text-white shadow-sm shadow-blue-200 transition sm:h-10 ${
-                isUploadingResume ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-blue-700"
-              }`}
-            >
-              <FiUpload className="h-3.5 w-3.5" aria-hidden />
-              <span className="whitespace-nowrap">{isUploadingResume ? "Uploading..." : "Upload resume"}</span>
-              <input
-                accept=".pdf,.doc,.docx"
-                className="sr-only"
-                disabled={isUploadingResume}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-
-                  if (file) {
-                    handleResumeUpload(file);
-                  }
-
-                  event.target.value = "";
-                }}
-                type="file"
-              />
-            </label>
             {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
               return (
                 <Link
                   key={item.href}
-                  className={`flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg px-3 transition sm:h-10 ${
-                    isActive
-                      ? "bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/80"
-                      : "text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm"
+                  className={`relative whitespace-nowrap pb-1 text-sm font-semibold after:absolute after:inset-x-0 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-[#3b82f6] after:transition ${
+                    isActive ? "after:opacity-100" : "after:opacity-0 hover:after:opacity-50"
                   }`}
                   href={item.href}
+                  onClick={closeMenus}
+                  style={{ color: "#ffffff" }}
                 >
-                  <Icon className="h-3.5 w-3.5" aria-hidden />
-                  <span className="whitespace-nowrap">{item.label}</span>
-                  {item.badge ? (
-                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] leading-none text-blue-700 ring-1 ring-blue-100">
-                      {item.badge}
-                    </span>
-                  ) : null}
+                  {item.label}
                 </Link>
               );
             })}
+          </nav>
+
+          <div className="relative flex shrink-0 items-center justify-end gap-2" ref={menuRef}>
+            <button
+              aria-label="Notifications"
+              className="relative grid h-10 w-10 place-items-center rounded-full text-white transition hover:bg-white/10 hover:text-white"
+              onClick={() => {
+                setIsUserMenuOpen(false);
+                setIsNotificationsOpen((open) => !open);
+              }}
+              type="button"
+            >
+              <FiBell className="h-4 w-4" aria-hidden />
+            </button>
+
             {isSignedIn ? (
               <button
-                className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg px-3 text-slate-600 transition hover:bg-white hover:text-slate-900 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 sm:h-10"
-                disabled={isSigningOut}
-                onClick={() => setShowSignOutConfirm(true)}
+                className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-2 text-left transition hover:bg-white/10"
+                onClick={() => {
+                  setIsNotificationsOpen(false);
+                  setIsUserMenuOpen((open) => !open);
+                }}
                 type="button"
               >
-                <FiLogOut className="h-3.5 w-3.5" aria-hidden />
-                <span className="whitespace-nowrap">{isSigningOut ? "Signing out..." : "Sign Out"}</span>
+                <span className="hidden max-w-[140px] truncate text-sm font-semibold text-white lg:block">{displayName}</span>
+                <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-[11px] font-semibold text-white">
+                  {initials}
+                </span>
               </button>
+            ) : (
+              <Link
+                className="inline-flex h-9 items-center rounded-full bg-[#3b82f6] px-3 text-xs font-semibold text-white transition hover:bg-[#2563eb] sm:h-10 sm:px-4 sm:text-[13px]"
+                href="/profile"
+                onClick={closeMenus}
+                style={{ color: "#ffffff" }}
+              >
+                Sign in
+              </Link>
+            )}
+
+            <button
+              aria-label="Open menu"
+              className="grid h-10 w-10 place-items-center rounded-full text-white transition hover:bg-white/10 md:hidden"
+              onClick={() => setIsMobileNavOpen(true)}
+              type="button"
+            >
+              <FiMenu className="h-5 w-5" aria-hidden />
+            </button>
+
+            {isNotificationsOpen ? (
+              <div className="absolute right-0 top-[48px] z-50 w-[min(calc(100vw-24px),320px)] rounded-2xl border border-slate-100 bg-white p-4 shadow-2xl shadow-slate-950/15 sm:top-[52px]">
+                <p className="text-sm font-semibold text-slate-950">Notifications</p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">You are all caught up. New job matches will appear here.</p>
+              </div>
             ) : null}
-          </nav>
+
+            {isUserMenuOpen && isSignedIn ? (
+              <div className="header-menu absolute right-0 top-[48px] z-50 w-[min(calc(100vw-24px),240px)] overflow-hidden rounded-2xl border border-slate-100 bg-white py-1.5 text-slate-700 shadow-2xl shadow-slate-950/15 sm:top-[52px]">
+                <Link
+                  className="flex items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium hover:bg-slate-50"
+                  href="/profile"
+                  onClick={closeMenus}
+                  style={{ color: "#334155" }}
+                >
+                  <FiUser className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                  <span>View profile</span>
+                </Link>
+                <label
+                  className={`flex items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium text-slate-700 transition ${
+                    isUploadingResume ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-slate-50"
+                  }`}
+                >
+                  <FiUpload className="h-4 w-4 text-slate-400" aria-hidden />
+                  {isUploadingResume ? "Uploading..." : "Upload resume"}
+                  <input
+                    accept=".pdf,.doc,.docx"
+                    className="sr-only"
+                    disabled={isUploadingResume}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+
+                      if (file) {
+                        handleResumeUpload(file);
+                      }
+
+                      event.target.value = "";
+                      setIsUserMenuOpen(false);
+                    }}
+                    type="file"
+                  />
+                </label>
+                <button
+                  className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                  disabled={isSigningOut}
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    setShowSignOutConfirm(true);
+                  }}
+                  type="button"
+                >
+                  <FiLogOut className="h-4 w-4 text-slate-400" aria-hidden />
+                  {isSigningOut ? "Signing out..." : "Sign out"}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
+      <div
+        className={`fixed inset-0 z-50 md:hidden ${isMobileNavOpen ? "pointer-events-auto" : "pointer-events-none"}`}
+      >
+        <button
+          aria-label="Close menu"
+          className={`absolute inset-0 bg-slate-950/50 transition-opacity ${isMobileNavOpen ? "opacity-100" : "opacity-0"}`}
+          onClick={() => setIsMobileNavOpen(false)}
+          type="button"
+        />
+        <section
+          className={`absolute inset-y-0 right-0 flex w-[min(86vw,320px)] flex-col bg-[#0b0d12] p-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] transition-transform duration-300 ${
+            isMobileNavOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-white">Menu</p>
+            <button
+              aria-label="Close menu"
+              className="grid h-9 w-9 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+              onClick={() => setIsMobileNavOpen(false)}
+              type="button"
+            >
+              <FiX className="h-5 w-5" aria-hidden />
+            </button>
+          </div>
+          <nav className="mt-6 grid gap-1" aria-label="Mobile navigation">
+            {navItems.map((item) => {
+              const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  className={`rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                    isActive ? "bg-white/10" : "hover:bg-white/5"
+                  }`}
+                  href={item.href}
+                  onClick={closeMenus}
+                  style={{ color: "#ffffff" }}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </section>
+      </div>
+
       {showSignOutConfirm ? (
-        <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-3 py-5 sm:px-4">
-          <section className="modal-panel-enter w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-950/15 sm:p-5">
+        <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-3 py-5 sm:px-4">
+          <section className="modal-panel-enter w-full max-w-md rounded-[22px] border border-slate-100 bg-white p-5 shadow-2xl shadow-slate-950/20 sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-slate-50 text-slate-500 ring-1 ring-slate-100">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-slate-50 text-slate-500">
                   <FiAlertCircle className="h-5 w-5" aria-hidden />
                 </span>
                 <div className="min-w-0">
                   <h2 className="text-lg font-semibold text-slate-950">Sign out?</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
                     You will be signed out of this candidate workspace.
                   </p>
                 </div>
@@ -182,14 +317,14 @@ export function DashboardHeader() {
             </div>
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
-                className="rounded-lg px-5 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                className="rounded-full px-5 py-2.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
                 onClick={() => setShowSignOutConfirm(false)}
                 type="button"
               >
                 Cancel
               </button>
               <button
-                className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full bg-[#0b0d12] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
                 disabled={isSigningOut}
                 onClick={handleConfirmSignOut}
                 type="button"
@@ -202,12 +337,12 @@ export function DashboardHeader() {
       ) : null}
 
       {uploadMessage ? (
-        <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-3 py-5 sm:px-4">
-          <section className="modal-panel-enter w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-950/15 sm:p-5">
+        <div className="modal-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-3 py-5 sm:px-4">
+          <section className="modal-panel-enter w-full max-w-md rounded-[22px] border border-slate-100 bg-white p-5 shadow-2xl shadow-slate-950/20 sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="text-lg font-semibold text-slate-950">{uploadMessage.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{uploadMessage.message}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{uploadMessage.message}</p>
               </div>
               <button
                 aria-label="Close resume upload message"
@@ -220,7 +355,7 @@ export function DashboardHeader() {
             </div>
             <div className="mt-6 flex justify-end">
               <button
-                className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                className="rounded-full bg-[#3b82f6] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#2563eb]"
                 onClick={() => setUploadMessage(null)}
                 type="button"
               >
@@ -232,4 +367,17 @@ export function DashboardHeader() {
       ) : null}
     </>
   );
+}
+
+function getInitials(name: string) {
+  const parts = name.split(" ").filter(Boolean);
+
+  if (parts.length === 0) {
+    return "C";
+  }
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }

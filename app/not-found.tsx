@@ -20,35 +20,36 @@ const quickLinks = [
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen text-slate-700">
+    <div className="min-h-screen bg-[#eef2f8] text-slate-700">
       <DashboardHeader />
 
-      <main className="mx-auto w-full max-w-[1200px] px-3 py-6 sm:px-6 sm:py-12">
-        <section className="overflow-hidden rounded-xl border border-blue-100 bg-white shadow-sm shadow-blue-100/50">
+      <main className="mx-auto w-full max-w-[1440px] px-3 py-8 sm:px-6 sm:py-12">
+        <section className="overflow-hidden rounded-[22px] bg-white shadow-[0_10px_40px_rgb(15_23_42_/_0.05)]">
           <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
-            <div className="min-w-0 px-4 py-8 sm:px-8 sm:py-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-blue-700">
+            <div className="min-w-0 px-5 py-8 sm:px-8 sm:py-10">
+              <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2563eb]">
                 <FiSearch className="h-3.5 w-3.5" aria-hidden />
                 404 not found
               </div>
 
-              <h1 className="mt-5 max-w-2xl text-3xl font-semibold text-slate-950 sm:text-4xl">
+              <h1 className="mt-5 max-w-2xl text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
                 This page is not available
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base">
                 The link may be broken, moved or no longer published. You can continue from the jobs board or manage your candidate profile.
               </p>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  className="inline-flex h-11 items-center justify-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-full bg-[#3b82f6] px-5 text-sm font-semibold transition hover:bg-[#2563eb] sm:w-auto"
                   href="/"
+                  style={{ color: "#ffffff" }}
                 >
                   <FiHome className="mr-2 h-4 w-4" aria-hidden />
                   Go to jobs
                 </Link>
                 <Link
-                  className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50/60 hover:text-blue-700"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50/60 hover:text-blue-700 sm:w-auto"
                   href="/profile"
                 >
                   Open profile
@@ -57,8 +58,8 @@ export default function NotFound() {
               </div>
             </div>
 
-            <aside className="min-w-0 border-t border-blue-100 bg-blue-50/50 p-4 sm:p-6 lg:border-l lg:border-t-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-500">
+            <aside className="min-w-0 border-t border-slate-100 bg-slate-50/70 p-5 sm:p-6 lg:border-l lg:border-t-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#3b82f6]">
                 Quick paths
               </p>
               <div className="mt-4 grid gap-3">
@@ -67,12 +68,12 @@ export default function NotFound() {
 
                   return (
                     <Link
-                      className="group rounded-lg border border-blue-100 bg-white p-4 shadow-sm shadow-blue-100/40 transition hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/70"
+                      className="group rounded-2xl bg-white p-4 shadow-[0_8px_24px_rgb(15_23_42_/_0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgb(15_23_42_/_0.08)]"
                       href={link.href}
                       key={link.href}
                     >
                       <span className="flex items-start gap-3">
-                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-sky-50 text-[#3b82f6]">
                           <Icon className="h-4 w-4" aria-hidden />
                         </span>
                         <span className="min-w-0">

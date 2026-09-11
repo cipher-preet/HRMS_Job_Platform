@@ -60,6 +60,55 @@ export type CandidateResumeUploadResponse = {
   };
 };
 
+export type CandidateVerificationVideoUploadResponse = {
+  success: boolean;
+  message: string;
+  details?: {
+    path: string;
+    message: string;
+  }[];
+  data?: {
+    verificationVideo?: {
+      id: string;
+      fileName: string;
+      url: string;
+      uploadedAt: string;
+    };
+    candidate: Candidate;
+  };
+};
+
+export type CandidateFaceVideo = {
+  id: string;
+  fileName: string;
+  url: string;
+  trainingStatus: string;
+  trainingError: string | null;
+  trainedAt: string | null;
+  uploadedAt: string;
+};
+
+export type CandidateFaceVideoUploadResponse = {
+  success: boolean;
+  message: string;
+  details?: {
+    path: string;
+    message: string;
+  }[];
+  data?: {
+    faceVideo?: CandidateFaceVideo;
+    candidate?: Candidate;
+  };
+};
+
+export type CandidateLatestFaceVideoResponse = {
+  success: boolean;
+  message: string;
+  data?: {
+    faceVideo: CandidateFaceVideo | null;
+  };
+};
+
 export type CandidateSessionResponse = {
   success: boolean;
   message: string;
@@ -99,6 +148,23 @@ export const authApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    uploadCandidateVerificationVideo: builder.mutation<CandidateVerificationVideoUploadResponse, FormData>({
+      query: (body) => ({
+        url: "/candidates/verification-video",
+        method: "POST",
+        body,
+      }),
+    }),
+    uploadCandidateFaceVideo: builder.mutation<CandidateFaceVideoUploadResponse, FormData>({
+      query: (body) => ({
+        url: "/candidates/face/video",
+        method: "POST",
+        body,
+      }),
+    }),
+    getLatestCandidateFaceVideo: builder.query<CandidateLatestFaceVideoResponse, void>({
+      query: () => "/candidates/face/video/latest",
+    }),
     candidateSignOut: builder.mutation<CandidateSignOutResponse, void>({
       query: () => ({
         url: "/candidates/sign-out",
@@ -112,7 +178,10 @@ export const {
   useCandidateLoginMutation,
   useCandidateRegisterMutation,
   useCandidateSignOutMutation,
+  useGetLatestCandidateFaceVideoQuery,
+  useUploadCandidateFaceVideoMutation,
   useUploadCandidateResumeMutation,
+  useUploadCandidateVerificationVideoMutation,
   useGetCandidateSessionQuery,
   useLazyGetCandidateSessionQuery,
 } = authApi;
