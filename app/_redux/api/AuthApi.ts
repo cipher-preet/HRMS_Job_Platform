@@ -12,6 +12,28 @@ export type CandidateLoginRequest = {
   password: string;
 };
 
+export type CandidateForgotPasswordRequest = {
+  email: string;
+};
+
+export type CandidateResetPasswordRequest = {
+  token: string;
+  password: string;
+  confirmPassword: string;
+};
+
+export type CandidatePasswordResponse = {
+  success: boolean;
+  message: string;
+  details?: {
+    path: string;
+    message: string;
+  }[];
+  data?: {
+    reset?: boolean;
+  } | null;
+};
+
 export type Candidate = {
   id: string;
   firstName: string;
@@ -141,6 +163,26 @@ export const authApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    candidateForgotPassword: builder.mutation<
+      CandidatePasswordResponse,
+      CandidateForgotPasswordRequest
+    >({
+      query: (body) => ({
+        url: "/candidates/forgot-password",
+        method: "POST",
+        body,
+      }),
+    }),
+    candidateResetPassword: builder.mutation<
+      CandidatePasswordResponse,
+      CandidateResetPasswordRequest
+    >({
+      query: (body) => ({
+        url: "/candidates/reset-password",
+        method: "POST",
+        body,
+      }),
+    }),
     uploadCandidateResume: builder.mutation<CandidateResumeUploadResponse, FormData>({
       query: (body) => ({
         url: "/candidates/resume",
@@ -176,6 +218,8 @@ export const authApi = baseApi.injectEndpoints({
 
 export const {
   useCandidateLoginMutation,
+  useCandidateForgotPasswordMutation,
+  useCandidateResetPasswordMutation,
   useCandidateRegisterMutation,
   useCandidateSignOutMutation,
   useGetLatestCandidateFaceVideoQuery,

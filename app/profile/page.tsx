@@ -1,9 +1,8 @@
 "use client";
 
-import type { ComponentType, FormEvent, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import type { ComponentType, FormEvent } from "react";
 import Link from "next/link";
+import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import {
   FiArrowLeft,
@@ -461,93 +460,117 @@ export default function ProfilePage() {
               Browse jobs
             </Link>
           </section>
-        </aside>
-      </main>
+        </section>
 
-      <DashboardFooter />
-
-      {faceVideoUploadSuccess ? (
-        <FaceVideoUploadSuccessToast
-          onClose={() => setFaceVideoUploadSuccess(null)}
-          success={faceVideoUploadSuccess}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function ProfileAuthScreen({
-  authMessage,
-  authMode,
-  isLoggingIn,
-  isRegistering,
-  onGoogleClick,
-  onModeChange,
-  onSubmit,
-}: {
-  authMessage: string | null;
-  authMode: AuthMode;
-  isLoggingIn: boolean;
-  isRegistering: boolean;
-  onGoogleClick: () => void;
-  onModeChange: (mode: AuthMode) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  const isLogin = authMode === "login";
-
-  return (
-    <main className="mx-auto grid min-h-[calc(100dvh-64px)] w-full max-w-[1440px] bg-white sm:min-h-[calc(100dvh-72px)] lg:grid-cols-2">
-      <section className="flex items-center justify-center px-4 py-8 sm:px-8 sm:py-10 lg:px-12">
-        <div className="w-full max-w-[420px]">
-          <div className="mb-6 flex items-center gap-3 sm:mb-8 lg:hidden">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white p-1 ring-1 ring-slate-200">
-              <Image alt="HireOnDeck logo" className="h-full w-full object-contain" height={40} src="/logo.png" width={40} />
-            </span>
-            <p className="text-base font-semibold text-slate-950">HireOnDeck</p>
-          </div>
-          <h1 className="text-[26px] font-semibold tracking-tight text-slate-950 sm:text-[32px]">
-            {isLogin ? "Welcome back" : "Create an account"}
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            {isLogin
-              ? "Sign in to manage your candidate profile and job applications."
-              : "Let’s get started with your candidate workspace."}
-          </p>
-
-          <form className="mt-8 space-y-5" onSubmit={onSubmit}>
-            {!isLogin ? (
-              <div className="grid gap-5 sm:grid-cols-2">
-                <AuthField
-                  autoComplete="given-name"
-                  label="First name"
-                  name="firstName"
-                  placeholder="Your first name"
-                  type="text"
-                />
-                <AuthField
-                  autoComplete="family-name"
-                  label="Last name"
-                  name="lastName"
-                  placeholder="Your last name"
-                  type="text"
-                />
+        {!isSessionLoading && !isSignedIn ? (
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
+            <div className="border-b border-slate-100 bg-white p-4 sm:p-5">
+              <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                <button
+                  className={`rounded-md px-4 py-2.5 text-sm font-semibold transition ${
+                    isLogin
+                      ? "bg-white text-slate-950 shadow-sm"
+                      : "text-slate-500 hover:bg-white hover:text-slate-800"
+                  }`}
+                  onClick={() => {
+                    setAuthMessage(null);
+                    setAuthMode("login");
+                  }}
+                  type="button"
+                >
+                  Login
+                </button>
+                <button
+                  className={`rounded-md px-4 py-2.5 text-sm font-semibold transition ${
+                    !isLogin
+                      ? "bg-white text-slate-950 shadow-sm"
+                      : "text-slate-500 hover:bg-white hover:text-slate-800"
+                  }`}
+                  onClick={() => {
+                    setAuthMessage(null);
+                    setAuthMode("register");
+                  }}
+                  type="button"
+                >
+                  Register
+                </button>
               </div>
-            ) : null}
-            <AuthField
-              autoComplete="email"
-              label="Email address"
-              name="email"
-              placeholder="Your email address"
-              type="email"
-            />
-            <AuthField
-              autoComplete={isLogin ? "current-password" : "new-password"}
-              key={`password-${authMode}`}
-              label="Password"
-              name="password"
-              placeholder="Your password"
-              type="password"
-            />
+            </div>
+
+            <div className="p-4 sm:p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                {isLogin ? "Login" : "Register"}
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+                {isLogin ? "Login" : "Register"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {isLogin
+                  ? "Access your saved jobs, profile and recruiter messages."
+                  : "Create your candidate profile and start matching with companies."}
+              </p>
+
+              <button
+                className="mt-5 flex h-11 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                onClick={() => {
+                  signIn();
+                  refetchCandidateSession();
+                }}
+                type="button"
+              >
+                <FcGoogle className="mr-2 h-5 w-5" aria-hidden />
+                {isLogin ? "Login with Google" : "Register with Google"}
+              </button>
+
+              <div className="my-5 flex items-center gap-3">
+                <span className="h-px flex-1 bg-slate-200" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                  or
+                </span>
+                <span className="h-px flex-1 bg-slate-200" />
+              </div>
+
+              <form
+                className="space-y-4"
+                onSubmit={handleAuthSubmit}
+              >
+                {!isLogin ? (
+                  <>
+                    <AuthField
+                      autoComplete="given-name"
+                      icon={FiUser}
+                      label="First name"
+                      name="firstName"
+                      placeholder="Enter your first name"
+                      type="text"
+                    />
+                    <AuthField
+                      autoComplete="family-name"
+                      icon={FiUser}
+                      label="Last name"
+                      name="lastName"
+                      placeholder="Enter your last name"
+                      type="text"
+                    />
+                  </>
+                ) : null}
+                <AuthField
+                  autoComplete="email"
+                  icon={FiMail}
+                  label="Email address"
+                  name="email"
+                  placeholder="Enter your email"
+                  type="email"
+                />
+                <AuthField
+                  autoComplete={isLogin ? "current-password" : "new-password"}
+                  icon={FiLock}
+                  label="Password"
+                  name="password"
+                  placeholder="Enter your password"
+                  type="password"
+                />
 
             {authMessage ? (
               <p className="rounded-full border border-red-100 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-600">
