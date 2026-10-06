@@ -12,6 +12,28 @@ export type CandidateLoginRequest = {
   password: string;
 };
 
+export type CandidateForgotPasswordRequest = {
+  email: string;
+};
+
+export type CandidateResetPasswordRequest = {
+  token: string;
+  password: string;
+  confirmPassword: string;
+};
+
+export type CandidatePasswordResponse = {
+  success: boolean;
+  message: string;
+  details?: {
+    path: string;
+    message: string;
+  }[];
+  data?: {
+    reset?: boolean;
+  } | null;
+};
+
 export type Candidate = {
   id: string;
   firstName: string;
@@ -122,10 +144,33 @@ export type CandidateSignOutResponse = {
   message: string;
 };
 
+export type CandidateInterview = {
+  id: string;
+  applicationId: string;
+  jobId: string;
+  jobTitle: string;
+  companyName: string | null;
+  mode: string | null;
+  scheduledAt: string;
+  durationMinutes: number;
+  status: string;
+  meetingLink: string | null;
+  notes: string | null;
+};
+
+export type CandidateInterviewsResponse = {
+  success: boolean;
+  message: string;
+  data?: { interviews: CandidateInterview[] };
+};
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getCandidateSession: builder.query<CandidateSessionResponse, void>({
       query: () => "/candidates/me",
+    }),
+    getCandidateInterviews: builder.query<CandidateInterviewsResponse, void>({
+      query: () => "/candidates/me/interviews",
     }),
     candidateRegister: builder.mutation<CandidateRegisterResponse, CandidateRegisterRequest>({
       query: (body) => ({
@@ -137,6 +182,26 @@ export const authApi = baseApi.injectEndpoints({
     candidateLogin: builder.mutation<CandidateLoginResponse, CandidateLoginRequest>({
       query: (body) => ({
         url: "/candidates/login",
+        method: "POST",
+        body,
+      }),
+    }),
+    candidateForgotPassword: builder.mutation<
+      CandidatePasswordResponse,
+      CandidateForgotPasswordRequest
+    >({
+      query: (body) => ({
+        url: "/candidates/forgot-password",
+        method: "POST",
+        body,
+      }),
+    }),
+    candidateResetPassword: builder.mutation<
+      CandidatePasswordResponse,
+      CandidateResetPasswordRequest
+    >({
+      query: (body) => ({
+        url: "/candidates/reset-password",
         method: "POST",
         body,
       }),
@@ -176,6 +241,8 @@ export const authApi = baseApi.injectEndpoints({
 
 export const {
   useCandidateLoginMutation,
+  useCandidateForgotPasswordMutation,
+  useCandidateResetPasswordMutation,
   useCandidateRegisterMutation,
   useCandidateSignOutMutation,
   useGetLatestCandidateFaceVideoQuery,
@@ -183,5 +250,6 @@ export const {
   useUploadCandidateResumeMutation,
   useUploadCandidateVerificationVideoMutation,
   useGetCandidateSessionQuery,
+  useGetCandidateInterviewsQuery,
   useLazyGetCandidateSessionQuery,
 } = authApi;

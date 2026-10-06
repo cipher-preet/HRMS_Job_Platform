@@ -1,6 +1,9 @@
 import { getBackendUrl } from "@/lib/backend";
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: Request,
+  context: RouteContext<"/api/jobs/apply/[id]">,
+) {
   const { id } = await context.params;
 
   try {
@@ -8,8 +11,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       method: "POST",
       headers: {
         Accept: "application/json",
+        "Content-Type": "application/json",
         Cookie: request.headers.get("cookie") ?? "",
       },
+      body: JSON.stringify({}),
       cache: "no-store",
     });
 

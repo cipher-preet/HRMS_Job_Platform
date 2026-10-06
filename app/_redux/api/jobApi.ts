@@ -107,8 +107,9 @@ export const jobApi = baseApi.injectEndpoints({
     }),
     applyJob: builder.mutation<ApplyJobResponse, string>({
       query: (id) => ({
-        url: `/jobs/${id}/apply`,
+        url: `/jobs/apply/${id}`,
         method: "POST",
+        body: {},
       }),
     }),
   }),
