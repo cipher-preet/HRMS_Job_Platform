@@ -1,8 +1,9 @@
 "use client";
 
-import type { ComponentType, FormEvent } from "react";
+import type { ComponentType, FormEvent, ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import {
   FiArrowLeft,
@@ -460,199 +461,10 @@ export default function ProfilePage() {
               Browse jobs
             </Link>
           </section>
-        </section>
-
-        {!isSessionLoading && !isSignedIn ? (
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200/70">
-            <div className="border-b border-slate-100 bg-white p-4 sm:p-5">
-              <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
-                <button
-                  className={`rounded-md px-4 py-2.5 text-sm font-semibold transition ${
-                    isLogin
-                      ? "bg-white text-slate-950 shadow-sm"
-                      : "text-slate-500 hover:bg-white hover:text-slate-800"
-                  }`}
-                  onClick={() => {
-                    setAuthMessage(null);
-                    setAuthMode("login");
-                  }}
-                  type="button"
-                >
-                  Login
-                </button>
-                <button
-                  className={`rounded-md px-4 py-2.5 text-sm font-semibold transition ${
-                    !isLogin
-                      ? "bg-white text-slate-950 shadow-sm"
-                      : "text-slate-500 hover:bg-white hover:text-slate-800"
-                  }`}
-                  onClick={() => {
-                    setAuthMessage(null);
-                    setAuthMode("register");
-                  }}
-                  type="button"
-                >
-                  Register
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                {isLogin ? "Login" : "Register"}
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                {isLogin ? "Login" : "Register"}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                {isLogin
-                  ? "Access your saved jobs, profile and recruiter messages."
-                  : "Create your candidate profile and start matching with companies."}
-              </p>
-
-              <button
-                className="mt-5 flex h-11 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                onClick={() => {
-                  signIn();
-                  refetchCandidateSession();
-                }}
-                type="button"
-              >
-                <FcGoogle className="mr-2 h-5 w-5" aria-hidden />
-                {isLogin ? "Login with Google" : "Register with Google"}
-              </button>
-
-              <div className="my-5 flex items-center gap-3">
-                <span className="h-px flex-1 bg-slate-200" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  or
-                </span>
-                <span className="h-px flex-1 bg-slate-200" />
-              </div>
-
-              <form
-                className="space-y-4"
-                onSubmit={handleAuthSubmit}
-              >
-                {!isLogin ? (
-                  <>
-                    <AuthField
-                      autoComplete="given-name"
-                      icon={FiUser}
-                      label="First name"
-                      name="firstName"
-                      placeholder="Enter your first name"
-                      type="text"
-                    />
-                    <AuthField
-                      autoComplete="family-name"
-                      icon={FiUser}
-                      label="Last name"
-                      name="lastName"
-                      placeholder="Enter your last name"
-                      type="text"
-                    />
-                  </>
-                ) : null}
-                <AuthField
-                  autoComplete="email"
-                  icon={FiMail}
-                  label="Email address"
-                  name="email"
-                  placeholder="Enter your email"
-                  type="email"
-                />
-                <AuthField
-                  autoComplete={isLogin ? "current-password" : "new-password"}
-                  icon={FiLock}
-                  label="Password"
-                  name="password"
-                  placeholder="Enter your password"
-                  type="password"
-                />
-
-            {authMessage ? (
-              <p className="rounded-full border border-red-100 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-600">
-                {authMessage}
-              </p>
-            ) : null}
-
-            <button
-              className="h-12 w-full cursor-pointer rounded-full bg-[#0b0d12] px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-              disabled={isLoggingIn || isRegistering}
-              type="submit"
-            >
-              {isLogin ? (isLoggingIn ? "Signing in..." : "Sign in") : isRegistering ? "Creating account..." : "Create account"}
-            </button>
-          </form>
-
-          <button
-            className="mt-4 flex h-12 w-full cursor-pointer items-center justify-center rounded-full bg-slate-100 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-            onClick={onGoogleClick}
-            type="button"
-          >
-            <FcGoogle className="mr-2 h-5 w-5" aria-hidden />
-            Continue with Google
-          </button>
-
-          <p className="mt-6 text-center text-sm text-slate-500">
-            {isLogin ? "Don’t have an account?" : "Already have an account?"}{" "}
-            <button
-              className="cursor-pointer font-semibold text-slate-950 underline underline-offset-2"
-              onClick={() => onModeChange(isLogin ? "register" : "login")}
-              type="button"
-            >
-              {isLogin ? "Register" : "Sign in"}
-            </button>
-          </p>
-        </div>
-      </section>
-
-      <section className="hidden p-4 lg:block lg:p-6">
-        <div className="relative flex h-full min-h-[560px] overflow-hidden rounded-[28px] bg-[#0b0d12] text-white xl:min-h-[640px]">
-          <Image
-            alt="Hiring team meeting candidates in a modern office"
-            className="object-cover"
-            fill
-            priority
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0d12] via-[#0b0d12]/75 to-[#0b0d12]/25" />
-
-          <div className="relative z-10 flex w-full flex-col justify-between p-6 xl:p-10">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white p-1">
-                <Image alt="HireOnDeck logo" className="h-full w-full object-contain" height={44} src="/logo.png" width={44} />
-              </span>
-              <p className="text-lg font-semibold tracking-tight">HireOnDeck</p>
-            </div>
-
-            <div className="max-w-md">
-              <div className="mb-4 flex flex-wrap gap-2">
-                {["Open jobs", "Resume upload", "Fast apply"].map((label) => (
-                  <span
-                    className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white"
-                    key={label}
-                  >
-                    {label}
-                  </span>
-                ))}
-              </div>
-              <h2 className="text-[28px] font-semibold leading-tight tracking-tight xl:text-[40px]">
-                {isLogin ? "Find your dream job here" : "Start applying to jobs today"}
-              </h2>
-              <p className="mt-4 text-base leading-7 text-white/80">
-                {isLogin
-                  ? "Sign in to search roles, upload your resume, and apply with a complete candidate profile."
-                  : "Create your profile, add your resume, and match with companies that are hiring now."}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+        </aside>
+      </main>
+      <DashboardFooter />
+    </div>
   );
 }
 
@@ -670,6 +482,60 @@ function ProfileAuthSkeleton() {
       </section>
       <section className="hidden p-6 lg:block">
         <div className="h-full min-h-[640px] animate-pulse rounded-[28px] bg-slate-100" />
+      </section>
+    </main>
+  );
+}
+
+function ProfileAuthScreen({
+  authMessage,
+  authMode,
+  isLoggingIn,
+  isRegistering,
+  onGoogleClick,
+  onModeChange,
+  onSubmit,
+}: {
+  authMessage: string | null;
+  authMode: AuthMode;
+  isLoggingIn: boolean;
+  isRegistering: boolean;
+  onGoogleClick: () => void;
+  onModeChange: (mode: AuthMode) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const isLogin = authMode === "login";
+
+  return (
+    <main className="mx-auto grid min-h-[calc(100dvh-64px)] w-full max-w-[1440px] bg-white sm:min-h-[calc(100dvh-72px)] lg:grid-cols-2">
+      <section className="flex items-center justify-center px-5 py-10 sm:px-8">
+        <div className="w-full max-w-[420px]">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-600">Candidate portal</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+            {isLogin ? "Welcome back" : "Create your profile"}
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            {isLogin ? "Sign in to manage your applications." : "Register to apply and track your hiring journey."}
+          </p>
+          <div className="mt-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+            {(["login", "register"] as const).map((mode) => (
+              <button className={`h-10 rounded-lg text-sm font-semibold ${authMode === mode ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"}`} key={mode} onClick={() => onModeChange(mode)} type="button">{mode === "login" ? "Login" : "Register"}</button>
+            ))}
+          </div>
+          <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+            {!isLogin ? <div className="grid gap-4 sm:grid-cols-2"><AuthField autoComplete="given-name" label="First name" name="firstName" placeholder="First name" type="text" /><AuthField autoComplete="family-name" label="Last name" name="lastName" placeholder="Last name" type="text" /></div> : null}
+            <AuthField autoComplete="email" label="Email address" name="email" placeholder="you@example.com" type="email" />
+            <AuthField autoComplete={isLogin ? "current-password" : "new-password"} label="Password" name="password" placeholder="Enter your password" type="password" />
+            {authMessage ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{authMessage}</p> : null}
+            <button className="h-12 w-full rounded-xl bg-[#0b0d12] text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60" disabled={isLoggingIn || isRegistering} type="submit">{isLogin ? (isLoggingIn ? "Signing in…" : "Sign in") : isRegistering ? "Creating account…" : "Create account"}</button>
+          </form>
+          <button className="mt-3 flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={onGoogleClick} type="button"><FcGoogle className="mr-2 h-5 w-5" aria-hidden />Continue with Google</button>
+        </div>
+      </section>
+      <section className="relative hidden overflow-hidden bg-[#0b0d12] lg:block">
+        <Image alt="Team interviewing a candidate" className="object-cover opacity-60" fill priority sizes="50vw" src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0b0d12] via-transparent to-transparent" />
+        <div className="absolute inset-x-10 bottom-10 text-white"><h2 className="text-4xl font-semibold leading-tight">Your next opportunity starts here.</h2><p className="mt-3 max-w-md text-white/75">Build your candidate profile, apply to roles, and join scheduled interviews securely.</p></div>
       </section>
     </main>
   );

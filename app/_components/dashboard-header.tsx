@@ -10,6 +10,7 @@ import { useGetCandidateSessionQuery, useUploadCandidateResumeMutation } from ".
 
 const navItems = [
   { label: "Find Jobs", href: "/" },
+  { label: "Interviews", href: "/interviews" },
   { label: "Profile", href: "/profile" },
 ];
 

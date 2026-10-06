@@ -144,10 +144,33 @@ export type CandidateSignOutResponse = {
   message: string;
 };
 
+export type CandidateInterview = {
+  id: string;
+  applicationId: string;
+  jobId: string;
+  jobTitle: string;
+  companyName: string | null;
+  mode: string | null;
+  scheduledAt: string;
+  durationMinutes: number;
+  status: string;
+  meetingLink: string | null;
+  notes: string | null;
+};
+
+export type CandidateInterviewsResponse = {
+  success: boolean;
+  message: string;
+  data?: { interviews: CandidateInterview[] };
+};
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getCandidateSession: builder.query<CandidateSessionResponse, void>({
       query: () => "/candidates/me",
+    }),
+    getCandidateInterviews: builder.query<CandidateInterviewsResponse, void>({
+      query: () => "/candidates/me/interviews",
     }),
     candidateRegister: builder.mutation<CandidateRegisterResponse, CandidateRegisterRequest>({
       query: (body) => ({
@@ -227,5 +250,6 @@ export const {
   useUploadCandidateResumeMutation,
   useUploadCandidateVerificationVideoMutation,
   useGetCandidateSessionQuery,
+  useGetCandidateInterviewsQuery,
   useLazyGetCandidateSessionQuery,
 } = authApi;
