@@ -6,7 +6,12 @@ Copy `.env.example` to `.env.local`, then set the backend URL in one place:
 
 ```env
 BACKEND_URL=http://localhost:4000
+NEXT_PUBLIC_INTEGRITY_AGENT_WINDOWS_URL=https://downloads.example.com/zylosis-integrity-agent-windows.exe
+NEXT_PUBLIC_INTEGRITY_AGENT_MACOS_URL=https://downloads.example.com/zylosis-integrity-agent-macos.dmg
+NEXT_PUBLIC_INTEGRITY_AGENT_LINUX_URL=https://downloads.example.com/zylosis-integrity-agent-linux
 ```
+
+The three public agent URLs are required for the interview installation screen. Build and sign the platform artifacts from `../../HRMS_INTERVIEW_INTEGRITY_AGENT`, upload them to your trusted download host, and place their HTTPS URLs here.
 
 Restart the development server after changing the value.
 

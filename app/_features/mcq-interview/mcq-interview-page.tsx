@@ -4,9 +4,10 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FiAlertCircle, FiArrowLeft, FiArrowRight, FiCheckCircle, FiClock, FiFileText, FiLoader, FiSend, FiShield } from "react-icons/fi";
 import { acceptMcqInvite, getMcqQuestions, saveMcqAnswers, submitMcqInterview, type McqQuestion, type McqSession } from "./api";
-import { InterviewDeviceCheck, InterviewFaceMonitor } from "../interview-proctoring/interview-device-check";
+import { InterviewDeviceCheck, InterviewFaceMonitor, InterviewIntegrityChecklist, InterviewSecurityGuard } from "../interview-proctoring/interview-device-check";
+import { InterviewAgentGuard } from "../interview-proctoring/interview-agent-guard";
 
-type Phase = "invite" | "loading" | "test" | "submitted" | "error";
+type Phase = "invite" | "loading" | "integrity" | "test" | "submitted" | "error";
 
 export function McqInterviewPage({ token, websocketBaseUrl }: { token: string; websocketBaseUrl: string }) {
   const [phase, setPhase] = useState<Phase>("invite");
@@ -20,6 +21,7 @@ export function McqInterviewPage({ token, websocketBaseUrl }: { token: string; w
   const [error, setError] = useState("");
   const [devicesReady, setDevicesReady] = useState(false);
   const autoSubmitted = useRef(false);
+  const integrityStarting = useRef(false);
   const current = questions[index];
   const answeredCount = Object.keys(answers).length;
   const allGenerated = Boolean(session && questions.length >= session.totalQuestions);
@@ -41,9 +43,21 @@ export function McqInterviewPage({ token, websocketBaseUrl }: { token: string; w
     setPhase("loading"); setError("");
     try {
       const { session: nextSession } = await acceptMcqInvite(token);
-      const batch = await getMcqQuestions(nextSession.id, token, nextSession.batchSize);
-      setSession(nextSession); setQuestions(batch.questions); setSeconds(batch.remainingSeconds); setPhase("test");
+      setSession(nextSession); setSeconds(nextSession.remainingSeconds); setPhase("integrity");
     } catch (caught) { setError(message(caught)); setPhase("error"); }
+  }
+
+  async function beginAfterIntegrity() {
+    if (!session || integrityStarting.current) return;
+    integrityStarting.current = true;
+    try {
+      const batch = await getMcqQuestions(session.id, token, session.batchSize);
+      setQuestions(batch.questions); setSeconds(batch.remainingSeconds); setPhase("test");
+    } catch (caught) {
+      setError(message(caught)); setPhase("error");
+    } finally {
+      integrityStarting.current = false;
+    }
   }
 
   async function selectAnswer(option: string) {
@@ -77,9 +91,12 @@ export function McqInterviewPage({ token, websocketBaseUrl }: { token: string; w
   }
 
   if (phase === "invite" || phase === "loading" || phase === "error") return <McqGate accepted={accepted} devicesReady={devicesReady} error={error} loading={phase === "loading"} onAccepted={setAccepted} onDevicesReady={setDevicesReady} onStart={start} onTryAgain={() => { setError(""); setPhase("invite"); }} />;
+  if (phase === "integrity" && session) return <InterviewAgentGuard interviewType="mcq" sessionId={session.id} token={token} onReady={() => void beginAfterIntegrity()} />;
   if (phase === "submitted") return <main className="grid min-h-screen place-items-center bg-[#eef2f8] p-4"><section className="max-w-xl rounded-3xl bg-white p-10 text-center shadow-xl"><FiCheckCircle className="mx-auto h-16 w-16 text-emerald-600" aria-hidden /><h1 className="mt-5 text-2xl font-bold text-slate-950">MCQ interview submitted</h1><p className="mt-3 leading-7 text-slate-600">Your answers were saved and sent for evaluation. You can safely close this window.</p></section></main>;
 
   return <main className="min-h-screen bg-[#eef2f8] text-slate-800">
+    {session ? <InterviewAgentGuard interviewType="mcq" sessionId={session.id} token={token} /> : null}
+    {session ? <InterviewSecurityGuard interviewType="mcq" sessionId={session.id} token={token} /> : null}
     {session ? <InterviewFaceMonitor interviewType="mcq" sessionId={session.id} token={token} websocketBaseUrl={websocketBaseUrl} /> : null}
     <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 bg-[#0b0d12] px-4 py-3 text-white sm:px-6"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-white p-1"><Image alt="HireOnDeck" height={36} priority src="/logo.png" width={36} /></span><div><p className="font-bold">{session?.jobTitle}</p><p className="text-xs text-slate-400">MCQ interview</p></div></div><div className="flex items-center gap-2"><span className={`inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-bold tabular-nums ${seconds < 300 ? "bg-rose-500/15 text-rose-300" : "bg-white/10"}`}><FiClock aria-hidden />{time}</span><button className="inline-flex h-10 items-center gap-2 rounded-full bg-blue-600 px-4 text-sm font-semibold hover:bg-blue-500 disabled:opacity-50" disabled={busy} onClick={() => void finish()} type="button"><FiSend aria-hidden />Submit</button></div></header>
     <div className="mx-auto grid w-full max-w-[1280px] gap-5 p-3 sm:p-6 lg:grid-cols-[260px_1fr]">
@@ -90,7 +107,7 @@ export function McqInterviewPage({ token, websocketBaseUrl }: { token: string; w
 }
 
 function McqGate({ accepted, devicesReady, error, loading, onAccepted, onDevicesReady, onStart, onTryAgain }: { accepted: boolean; devicesReady: boolean; error: string; loading: boolean; onAccepted: (value: boolean) => void; onDevicesReady: (ready: boolean) => void; onStart: () => void; onTryAgain: () => void }) {
-  return <main className="grid min-h-screen place-items-center bg-[#eef2f8] p-4"><section className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-xl"><div className="bg-[#0b0d12] p-8 text-white"><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-white p-1"><Image alt="HireOnDeck" height={40} priority src="/logo.png" width={40} /></span><b>HireOnDeck</b></div><div className="mt-8 flex gap-4"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600"><FiFileText aria-hidden /></span><div><p className="text-sm font-semibold text-blue-300">Candidate assessment</p><h1 className="text-3xl font-bold">Scheduled MCQ interview</h1></div></div></div><div className="p-7 sm:p-10">{error ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5"><div className="flex gap-3"><FiAlertCircle className="text-rose-600" aria-hidden /><p className="text-sm leading-6 text-rose-700">{error}</p></div><button className="mt-4 h-11 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white" onClick={onTryAgain} type="button">Try again</button></div> : <><p className="leading-7 text-slate-600">This assessment is available only to the candidate selected by the hiring organization and only during its scheduled window.</p><div className="mt-5 flex items-start gap-3 rounded-xl bg-slate-50 p-4"><FiShield className="mt-1 shrink-0 text-blue-600" aria-hidden /><p className="text-sm leading-6 text-slate-600">Answers save as you select them. Do not share this private link or leave the assessment unattended.</p></div><InterviewDeviceCheck onReadyChange={onDevicesReady} /><label className="mt-6 flex cursor-pointer gap-3 rounded-xl border border-slate-200 p-4"><input checked={accepted} className="mt-1 h-5 w-5 accent-blue-600" onChange={(event) => onAccepted(event.target.checked)} type="checkbox" /><span className="text-sm leading-6">I confirm I am the invited candidate and will complete this assessment independently.</span></label><button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-500 disabled:opacity-50" disabled={!accepted || !devicesReady || loading} onClick={onStart} type="button">{loading ? <><FiLoader className="animate-spin" aria-hidden />Verifying schedule…</> : <>Join MCQ interview <FiArrowRight aria-hidden /></>}</button>{!devicesReady ? <p className="mt-2 text-center text-xs text-slate-500">Complete the camera and microphone check to enable joining.</p> : null}</>}</div></section></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#eef2f8] p-4"><section className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-xl"><div className="bg-[#0b0d12] p-8 text-white"><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-white p-1"><Image alt="HireOnDeck" height={40} priority src="/logo.png" width={40} /></span><b>HireOnDeck</b></div><div className="mt-8 flex gap-4"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600"><FiFileText aria-hidden /></span><div><p className="text-sm font-semibold text-blue-300">Candidate assessment</p><h1 className="text-3xl font-bold">Scheduled MCQ interview</h1></div></div></div><div className="p-7 sm:p-10">{error ? <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5"><div className="flex gap-3"><FiAlertCircle className="text-rose-600" aria-hidden /><p className="text-sm leading-6 text-rose-700">{error}</p></div><button className="mt-4 h-11 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white" onClick={onTryAgain} type="button">Try again</button></div> : <><p className="leading-7 text-slate-600">This assessment is available only to the candidate selected by the hiring organization and only during its scheduled window.</p><div className="mt-5 flex items-start gap-3 rounded-xl bg-slate-50 p-4"><FiShield className="mt-1 shrink-0 text-blue-600" aria-hidden /><p className="text-sm leading-6 text-slate-600">Answers save as you select them. Do not share this private link or leave the assessment unattended.</p></div><InterviewIntegrityChecklist /><InterviewDeviceCheck onReadyChange={onDevicesReady} /><label className="mt-6 flex cursor-pointer gap-3 rounded-xl border border-slate-200 p-4"><input checked={accepted} className="mt-1 h-5 w-5 accent-blue-600" onChange={(event) => onAccepted(event.target.checked)} type="checkbox" /><span className="text-sm leading-6">I confirm I am the invited candidate and will complete this assessment independently.</span></label><button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-500 disabled:opacity-50" disabled={!accepted || !devicesReady || loading} onClick={onStart} type="button">{loading ? <><FiLoader className="animate-spin" aria-hidden />Verifying schedule…</> : <>Join MCQ interview <FiArrowRight aria-hidden /></>}</button>{!devicesReady ? <p className="mt-2 text-center text-xs text-slate-500">Complete the camera and microphone check to enable joining.</p> : null}</>}</div></section></main>;
 }
 function mergeQuestions(current: McqQuestion[], next: McqQuestion[]) { const map = new Map(current.map((question) => [question.id, question])); next.forEach((question) => map.set(question.id, question)); return [...map.values()].sort((a, b) => a.sequence - b.sequence); }
 function message(error: unknown) { return error instanceof Error ? error.message : "Unable to continue the MCQ interview"; }

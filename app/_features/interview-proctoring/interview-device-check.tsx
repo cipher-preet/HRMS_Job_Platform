@@ -6,9 +6,12 @@ import {
   FiCamera,
   FiCheckCircle,
   FiLoader,
+  FiLock,
   FiMic,
+  FiShield,
   FiVolume2,
 } from "react-icons/fi";
+import { recordBrowserIntegrityEvent } from "./integrity-api";
 
 type DeviceCheckProps = {
   onReadyChange: (ready: boolean) => void;
@@ -23,6 +26,122 @@ type FaceMonitorProps = {
 
 type CheckState = "idle" | "checking" | "ready" | "error";
 type MonitorState = "connecting" | "verified" | "warning" | "offline";
+
+const integrityRules = [
+  "Stay on this interview tab and keep it in fullscreen mode.",
+  "Do not open another tab, window, application, or virtual assistant.",
+  "Copy, cut, paste, right-click, printing, saving, and developer tools are disabled.",
+  "Screenshots, screen recording, phones, books, and help from another person are prohibited.",
+];
+
+export function InterviewIntegrityChecklist() {
+  return (
+    <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+      <div className="flex items-center gap-2 font-bold"><FiShield aria-hidden /> Interview integrity rules</div>
+      <ul className="mt-3 space-y-2 pl-5 text-sm leading-5">
+        {integrityRules.map((rule) => <li className="list-disc" key={rule}>{rule}</li>)}
+      </ul>
+      <p className="mt-3 text-xs leading-5 text-amber-800">Leaving the interview or attempting a restricted action is counted as a violation.</p>
+    </section>
+  );
+}
+
+export function InterviewSecurityGuard({ interviewType, sessionId, token }: { interviewType: "mcq" | "coding"; sessionId: string; token: string }) {
+  const [locked, setLocked] = useState(true);
+  const [reason, setReason] = useState("Enter fullscreen to begin the secured interview.");
+  const [violations, setViolations] = useState(0);
+  const lastViolationRef = useRef(0);
+  const fullscreenSupported = typeof document !== "undefined" && Boolean(document.documentElement.requestFullscreen);
+
+  const recordViolation = useCallback((message: string) => {
+    const now = Date.now();
+    if (now - lastViolationRef.current < 800) return;
+    lastViolationRef.current = now;
+    setViolations((count) => count + 1);
+    setReason(message);
+    setLocked(true);
+    void recordBrowserIntegrityEvent(interviewType, sessionId, token, "browser_restriction_triggered", { message }).catch(() => undefined);
+  }, [interviewType, sessionId, token]);
+
+  useEffect(() => {
+    const handleContextMenu = (event: Event) => {
+      event.preventDefault();
+      recordViolation("Right-click is disabled during this interview.");
+    };
+    const handleClipboard = (event: Event) => {
+      event.preventDefault();
+      recordViolation("Copy, cut, and paste are disabled during this interview.");
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      const modifier = event.ctrlKey || event.metaKey;
+      const restricted =
+        event.key === "PrintScreen" ||
+        event.key === "F12" ||
+        (modifier && ["c", "x", "v", "p", "s", "u"].includes(key)) ||
+        (modifier && event.shiftKey && ["i", "j", "c"].includes(key));
+      if (!restricted) return;
+      event.preventDefault();
+      event.stopPropagation();
+      recordViolation(event.key === "PrintScreen" ? "A screenshot attempt was detected." : "That keyboard shortcut is disabled during this interview.");
+    };
+    const handleVisibility = () => {
+      if (document.hidden) recordViolation("You left the interview tab. Return to fullscreen to continue.");
+    };
+    const handleBlur = () => recordViolation("The interview window lost focus. Other tabs and applications are not allowed.");
+    const handleFullscreen = () => {
+      if (fullscreenSupported && !document.fullscreenElement) recordViolation("Fullscreen mode was exited. Re-enter fullscreen to continue.");
+    };
+
+    document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("copy", handleClipboard);
+    document.addEventListener("cut", handleClipboard);
+    document.addEventListener("paste", handleClipboard);
+    document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("visibilitychange", handleVisibility);
+    document.addEventListener("fullscreenchange", handleFullscreen);
+    window.addEventListener("blur", handleBlur);
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("copy", handleClipboard);
+      document.removeEventListener("cut", handleClipboard);
+      document.removeEventListener("paste", handleClipboard);
+      document.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      document.removeEventListener("fullscreenchange", handleFullscreen);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, [fullscreenSupported, recordViolation]);
+
+  async function resume() {
+    try {
+      if (fullscreenSupported && !document.fullscreenElement) await document.documentElement.requestFullscreen();
+      setLocked(false);
+      setReason("");
+    } catch {
+      setReason("Fullscreen permission was denied. Allow fullscreen mode to continue.");
+    }
+  }
+
+  if (!locked) {
+    return violations ? <div className="fixed left-3 top-20 z-40 rounded-full border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 shadow-lg" aria-live="polite">Integrity violations: {violations}</div> : null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-slate-950/90 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="security-lock-title">
+      <section className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-100 text-amber-700"><FiLock className="h-6 w-6" aria-hidden /></span>
+        <h2 className="mt-5 text-2xl font-bold text-slate-950" id="security-lock-title">Interview paused</h2>
+        <p className="mt-2 leading-6 text-slate-600">{reason}</p>
+        <InterviewIntegrityChecklist />
+        {violations > 0 ? <p className="mt-4 text-sm font-bold text-rose-700">Recorded violations: {violations}</p> : null}
+        <button autoFocus className="mt-5 min-h-12 w-full rounded-xl bg-blue-600 px-5 font-semibold text-white outline-offset-2 hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700" onClick={() => void resume()} type="button">
+          {fullscreenSupported ? "Enter fullscreen and continue" : "Acknowledge and continue"}
+        </button>
+      </section>
+    </div>
+  );
+}
 
 export function InterviewDeviceCheck({ onReadyChange }: DeviceCheckProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -155,60 +274,16 @@ export function InterviewFaceMonitor({ interviewType, sessionId, token, websocke
 
   useEffect(() => {
     let active = true;
-    let timer: number | undefined;
+    let captureTimer: number | undefined;
+    let reconnectTimer: number | undefined;
     let stream: MediaStream | undefined;
     let socket: WebSocket | undefined;
     let awaitingResult = false;
+    let reconnectAttempt = 0;
 
-    const start = async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
-          audio: false,
-        });
-        if (!active) return;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-
-        const wsBase = websocketBaseUrl.replace(/\/$/, "");
-        socket = new WebSocket(`${wsBase}/api/${interviewType === "mcq" ? "mcq-interviews" : "coding-interviews"}/sessions/${encodeURIComponent(sessionId)}/face-stream?token=${encodeURIComponent(token)}`);
-
-        socket.addEventListener("open", () => {
-          if (!active) return;
-          setState("connecting");
-          setMessage("Identity monitor connected. First check is running…");
-          window.setTimeout(capture, 750);
-          timer = window.setInterval(capture, 20_000);
-        });
-        socket.addEventListener("message", (event) => {
-          awaitingResult = false;
-          const payload = safeJson(event.data);
-          if (!payload) return;
-          if (payload.success && payload.type === "verification") {
-            setState("verified");
-            setMessage("Identity verified");
-          } else if (payload.type === "warning" || payload.success === false) {
-            setState("warning");
-            setMessage(payload.message ?? payload.error?.message ?? "Face could not be verified. Stay centered in the camera.");
-          }
-        });
-        socket.addEventListener("close", () => {
-          if (!active) return;
-          setState("offline");
-          setMessage("Identity monitor disconnected. Check your connection and keep the camera enabled.");
-        });
-        socket.addEventListener("error", () => {
-          if (!active) return;
-          setState("offline");
-          setMessage("Identity monitoring is temporarily unavailable.");
-        });
-      } catch (error) {
-        if (!active) return;
-        setState("offline");
-        setMessage(deviceErrorMessage(error));
-      }
+    const clearCaptureTimer = () => {
+      if (captureTimer !== undefined) window.clearInterval(captureTimer);
+      captureTimer = undefined;
     };
 
     const capture = () => {
@@ -227,10 +302,90 @@ export function InterviewFaceMonitor({ interviewType, sessionId, token, websocke
       }, "image/jpeg", 0.72);
     };
 
+    const connect = () => {
+      if (!active || !navigator.onLine) {
+        setState("offline");
+        setMessage("You are offline. Identity monitoring will reconnect automatically.");
+        return;
+      }
+
+      setState("connecting");
+      setMessage(reconnectAttempt ? "Reconnecting identity monitor…" : "Connecting identity monitor…");
+      const wsBase = websocketBaseUrl.replace(/\/$/, "");
+      socket = new WebSocket(`${wsBase}/api/${interviewType === "mcq" ? "mcq-interviews" : "coding-interviews"}/sessions/${encodeURIComponent(sessionId)}/face-stream?token=${encodeURIComponent(token)}`);
+
+      socket.addEventListener("open", () => {
+        if (!active) return;
+        reconnectAttempt = 0;
+        awaitingResult = false;
+        setState("connecting");
+        setMessage("Identity monitor connected. First check is running…");
+        window.setTimeout(capture, 750);
+        clearCaptureTimer();
+        captureTimer = window.setInterval(capture, 20_000);
+      });
+      socket.addEventListener("message", (event) => {
+        awaitingResult = false;
+        const payload = safeJson(event.data);
+        if (!payload) return;
+        if (payload.success && payload.type === "verification") {
+          setState("verified");
+          setMessage("Identity verified");
+        } else if (payload.type === "warning" || payload.success === false) {
+          setState("warning");
+          setMessage(payload.message ?? payload.error?.message ?? "Face could not be verified. Stay centered in the camera.");
+        }
+      });
+      socket.addEventListener("close", (event) => {
+        clearCaptureTimer();
+        awaitingResult = false;
+        if (!active || event.code === 1000) return;
+        const retryDelay = Math.min(30_000, 2_000 * 2 ** reconnectAttempt);
+        reconnectAttempt += 1;
+        setState("offline");
+        setMessage(`Identity monitor disconnected. Reconnecting in ${Math.ceil(retryDelay / 1000)} seconds…`);
+        reconnectTimer = window.setTimeout(connect, retryDelay);
+      });
+      socket.addEventListener("error", () => {
+        if (!active) return;
+        setState("offline");
+        setMessage("Identity monitoring connection failed. Reconnecting…");
+      });
+    };
+
+    const start = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+          audio: false,
+        });
+        if (!active) return;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+
+        connect();
+      } catch (error) {
+        if (!active) return;
+        setState("offline");
+        setMessage(deviceErrorMessage(error));
+      }
+    };
+
+    const handleOnline = () => {
+      if (!active || socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) return;
+      if (reconnectTimer !== undefined) window.clearTimeout(reconnectTimer);
+      reconnectTimer = undefined;
+      connect();
+    };
+    window.addEventListener("online", handleOnline);
     void start();
     return () => {
       active = false;
-      if (timer !== undefined) window.clearInterval(timer);
+      clearCaptureTimer();
+      if (reconnectTimer !== undefined) window.clearTimeout(reconnectTimer);
+      window.removeEventListener("online", handleOnline);
       socket?.close(1000, "Interview view closed");
       stream?.getTracks().forEach((track) => track.stop());
     };
