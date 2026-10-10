@@ -24,9 +24,10 @@ import {
   type CodingProblem,
   type CodingSession,
 } from "./api";
-import { InterviewDeviceCheck, InterviewFaceMonitor } from "../interview-proctoring/interview-device-check";
+import { InterviewDeviceCheck, InterviewFaceMonitor, InterviewIntegrityChecklist, InterviewSecurityGuard } from "../interview-proctoring/interview-device-check";
+import { InterviewAgentGuard } from "../interview-proctoring/interview-agent-guard";
 
-type Phase = "invite" | "loading" | "assessment" | "submitted" | "error";
+type Phase = "invite" | "loading" | "integrity" | "assessment" | "submitted" | "error";
 type Action = "run" | "submit" | "finish" | null;
 
 export function CodingInterviewPage({ token, websocketBaseUrl }: { token: string; websocketBaseUrl: string }) {
@@ -44,6 +45,7 @@ export function CodingInterviewPage({ token, websocketBaseUrl }: { token: string
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [devicesReady, setDevicesReady] = useState(false);
   const autoSubmitStarted = useRef(false);
+  const integrityStarting = useRef(false);
 
   const currentProblem = problems[currentIndex];
   const currentCode = currentProblem ? codeByProblem[currentProblem.id] ?? "" : "";
@@ -87,24 +89,31 @@ export function CodingInterviewPage({ token, websocketBaseUrl }: { token: string
     try {
       const accepted = await acceptCodingInvite(token);
       const activeSession = accepted.session;
-      const problemData = await getCodingProblems(activeSession.id, token);
-      const firstLanguage = activeSession.allowedLanguages[0] ?? "javascript";
-      const initialCode = Object.fromEntries(
-        problemData.problems.map((problem) => [
-          problem.id,
-          starterCodeFor(problem, firstLanguage),
-        ]),
-      );
-
       setSession(activeSession);
+      setRemainingSeconds(activeSession.remainingSeconds);
+      setPhase("integrity");
+    } catch (caught) {
+      setError(getErrorMessage(caught));
+      setPhase("error");
+    }
+  }
+
+  async function beginAfterIntegrity() {
+    if (!session || integrityStarting.current) return;
+    integrityStarting.current = true;
+    try {
+      const problemData = await getCodingProblems(session.id, token);
+      const firstLanguage = session.allowedLanguages[0] ?? "javascript";
       setProblems(problemData.problems);
       setLanguage(firstLanguage);
-      setCodeByProblem(initialCode);
+      setCodeByProblem(Object.fromEntries(problemData.problems.map((problem) => [problem.id, starterCodeFor(problem, firstLanguage)])));
       setRemainingSeconds(problemData.remainingSeconds);
       setPhase("assessment");
     } catch (caught) {
       setError(getErrorMessage(caught));
       setPhase("error");
+    } finally {
+      integrityStarting.current = false;
     }
   }
 
@@ -198,6 +207,10 @@ export function CodingInterviewPage({ token, websocketBaseUrl }: { token: string
     );
   }
 
+  if (phase === "integrity" && session) {
+    return <InterviewAgentGuard interviewType="coding" sessionId={session.id} token={token} onReady={() => void beginAfterIntegrity()} />;
+  }
+
   if (phase === "submitted") {
     return (
       <main className="grid min-h-screen place-items-center bg-[#eef2f8] px-4 py-10 text-slate-800">
@@ -217,6 +230,8 @@ export function CodingInterviewPage({ token, websocketBaseUrl }: { token: string
 
   return (
     <main className="flex min-h-screen flex-col bg-[#eef2f8] text-slate-800">
+      {session ? <InterviewAgentGuard interviewType="coding" sessionId={session.id} token={token} /> : null}
+      {session ? <InterviewSecurityGuard interviewType="coding" sessionId={session.id} token={token} /> : null}
       {session ? <InterviewFaceMonitor interviewType="coding" sessionId={session.id} token={token} websocketBaseUrl={websocketBaseUrl} /> : null}
       <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0b0d12] px-4 py-3 text-white sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
@@ -328,6 +343,7 @@ function InterviewGate({ error, loading, onStart, onTryAgain, termsAccepted, set
             <>
               <p className="leading-7 text-slate-600">This secure link is assigned to one scheduled candidate. Access will open only during the time configured by the hiring organization.</p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2"><GateItem icon={<FiClock />} text="A server-controlled timer starts when you join." /><GateItem icon={<FiShield />} text="Do not refresh or share this private interview link." /></div>
+              <InterviewIntegrityChecklist />
               <InterviewDeviceCheck onReadyChange={setDevicesReady} />
               <label className="mt-7 flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-4 hover:bg-slate-50"><input checked={termsAccepted} className="mt-1 h-5 w-5 accent-blue-600" onChange={(event) => setTermsAccepted(event.target.checked)} type="checkbox" /><span className="text-sm leading-6 text-slate-700">I confirm that I am the invited candidate and will complete this assessment independently.</span></label>
               <button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50" disabled={!termsAccepted || !devicesReady || loading} onClick={onStart} type="button">{loading ? <><FiLoader className="animate-spin" aria-hidden /> Verifying schedule…</> : <>Join coding round <FiArrowRight aria-hidden /></>}</button>
